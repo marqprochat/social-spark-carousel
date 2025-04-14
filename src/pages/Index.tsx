@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import BusinessInfoForm, { BusinessInfo } from "@/components/BusinessInfoForm";
 import ApiKeyInput from "@/components/ApiKeyInput";
 import CarouselCreator from "@/components/CarouselCreator";
+import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState<"info" | "api" | "creator">("info");
@@ -49,6 +50,7 @@ const Index = () => {
           />
         )}
       </div>
+      <Toaster />
     </div>
   );
 };

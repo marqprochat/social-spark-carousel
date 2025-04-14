@@ -41,6 +41,12 @@ export async function generateCarouselContent({
       Não inclua títulos ou introduções, apenas os textos numerados para cada slide.
     `;
 
+    // Adicionando logs para debug
+    console.log("Enviando requisição para OpenAI com:", {
+      model: "gpt-4o",
+      apiKey: apiKey ? "Presente (primeiros 4 caracteres): " + apiKey.substring(0, 4) + "..." : "Ausente",
+    });
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -61,11 +67,13 @@ export async function generateCarouselContent({
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Erro ao gerar textos");
+      const errorData = await response.json();
+      console.error("Erro da API OpenAI:", errorData);
+      throw new Error(errorData.error?.message || `Erro na API OpenAI: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("Resposta da OpenAI:", data);
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
@@ -94,8 +102,10 @@ export async function generateCarouselContent({
   } catch (error) {
     console.error("Erro ao gerar textos:", error);
     toast({
-      title: "Erro",
-      description: error instanceof Error ? error.message : "Erro ao gerar textos",
+      title: "Erro na API da OpenAI",
+      description: error instanceof Error 
+        ? error.message 
+        : "Falha na conexão com a API da OpenAI. Verifique sua chave de API e conexão.",
       variant: "destructive",
     });
     return [];
