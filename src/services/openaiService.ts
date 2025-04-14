@@ -3,16 +3,17 @@ import { toast } from "@/components/ui/use-toast";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 
 const API_URL = "https://api.openai.com/v1/chat/completions";
+const DEFAULT_API_KEY = "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";
 
 interface GenerateTextProps {
   businessInfo: BusinessInfo;
-  apiKey: string;
+  apiKey?: string;
   numSlides?: number;
 }
 
 export async function generateCarouselContent({
   businessInfo,
-  apiKey,
+  apiKey = DEFAULT_API_KEY,
   numSlides = 5
 }: GenerateTextProps): Promise<string[]> {
   // Validar API key
@@ -43,7 +44,7 @@ export async function generateCarouselContent({
 
     // Adicionando logs para debug
     console.log("Enviando requisição para OpenAI com:", {
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo", // Modelo mais estável
       apiKey: apiKey ? "Presente (primeiros 4 caracteres): " + apiKey.substring(0, 4) + "..." : "Ausente",
       prompt: prompt.substring(0, 100) + "..."
     });
@@ -55,7 +56,7 @@ export async function generateCarouselContent({
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo", // Mudando para um modelo mais estável
+        model: "gpt-3.5-turbo", // Mantendo o modelo mais estável
         messages: [
           {
             role: "user",

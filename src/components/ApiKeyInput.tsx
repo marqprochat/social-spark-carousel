@@ -1,16 +1,38 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
 
 interface ApiKeyInputProps {
   onKeysSubmitted: (openAiKey: string, unsplashKey: string) => void;
 }
 
+// Chaves de API fixas
+const DEFAULT_OPENAI_KEY = "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";
+const DEFAULT_UNSPLASH_KEY = "oFdbSDmB4dckb0NWVq4QTHDPjAg2AVw0BbkjJt6TZpo";
+
 const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted }) => {
-  const [openAiKey, setOpenAiKey] = useState<string>("");
-  const [unsplashKey, setUnsplashKey] = useState<string>("");
+  const [openAiKey, setOpenAiKey] = useState<string>(DEFAULT_OPENAI_KEY);
+  const [unsplashKey, setUnsplashKey] = useState<string>(DEFAULT_UNSPLASH_KEY);
+
+  // Submeter automaticamente as chaves ao montar o componente
+  useEffect(() => {
+    if (openAiKey && unsplashKey) {
+      toast({
+        title: "APIs Configuradas",
+        description: "As chaves de API foram configuradas automaticamente.",
+      });
+      
+      // Pequeno atraso para garantir que o toast seja exibido
+      const timer = setTimeout(() => {
+        onKeysSubmitted(openAiKey, unsplashKey);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +43,9 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted }) => {
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg animate-fade-in">
-      <h2 className="text-xl font-semibold mb-4">Configure as APIs</h2>
+      <h2 className="text-xl font-semibold mb-4">Configuração das APIs</h2>
       <p className="mb-4 text-gray-600 text-sm">
-        Para gerar textos e obter imagens, forneça suas chaves de API:
+        As chaves de API foram pré-configuradas. Você pode prosseguir diretamente ou alterá-las se necessário:
       </p>
       
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -32,7 +54,6 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted }) => {
           <Input
             id="openAiKey"
             type="password"
-            placeholder="sk-..."
             value={openAiKey}
             onChange={(e) => setOpenAiKey(e.target.value)}
             className="w-full"
@@ -54,7 +75,6 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted }) => {
           <Input
             id="unsplashKey"
             type="password"
-            placeholder="Insira sua chave de acesso Unsplash"
             value={unsplashKey}
             onChange={(e) => setUnsplashKey(e.target.value)}
             className="w-full"
@@ -74,7 +94,6 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted }) => {
         <Button 
           type="submit" 
           className="w-full bg-gradient-to-r from-brand-purple to-brand-blue hover:opacity-90"
-          disabled={!openAiKey || !unsplashKey}
         >
           Continuar
         </Button>

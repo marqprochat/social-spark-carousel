@@ -3,6 +3,7 @@ import { BusinessInfo } from "@/components/BusinessInfoForm";
 import { toast } from "@/components/ui/use-toast";
 
 const UNSPLASH_API_URL = "https://api.unsplash.com/search/photos";
+const DEFAULT_ACCESS_KEY = "oFdbSDmB4dckb0NWVq4QTHDPjAg2AVw0BbkjJt6TZpo";
 
 export type UnsplashImage = {
   id: string;
@@ -19,13 +20,13 @@ export type UnsplashImage = {
 
 interface SearchImagesProps {
   businessInfo: BusinessInfo;
-  accessKey: string;
+  accessKey?: string;
   perPage?: number;
 }
 
 export async function searchImages({
   businessInfo,
-  accessKey,
+  accessKey = DEFAULT_ACCESS_KEY,
   perPage = 20,
 }: SearchImagesProps): Promise<UnsplashImage[]> {
   if (!accessKey) {
@@ -38,6 +39,8 @@ export async function searchImages({
   }
 
   try {
+    console.log("Buscando imagens com a chave Unsplash:", accessKey.substring(0, 4) + "...");
+    
     // Construa uma query que combine vários aspectos do negócio
     const searchQuery = `${businessInfo.industry} ${businessInfo.postObjective.replace(
       /[^\w\s]/g,
@@ -49,6 +52,8 @@ export async function searchImages({
     url.searchParams.append("per_page", perPage.toString());
     url.searchParams.append("client_id", accessKey);
     url.searchParams.append("orientation", "square"); // Bom para posts de Instagram
+
+    console.log("URL de busca:", url.toString());
 
     const response = await fetch(url.toString());
 
