@@ -51,7 +51,7 @@ export async function searchImages({
     url.searchParams.append("query", searchQuery);
     url.searchParams.append("per_page", perPage.toString());
     url.searchParams.append("client_id", accessKey);
-    url.searchParams.append("orientation", "square"); // Bom para posts de Instagram
+    url.searchParams.append("orientation", "landscape"); // Mudando para um valor válido: landscape, portrait, ou squarish
 
     console.log("URL de busca:", url.toString());
 
@@ -63,6 +63,12 @@ export async function searchImages({
     }
 
     const data = await response.json();
+    
+    // Verificar se temos resultados antes de retornar
+    if (!data.results || data.results.length === 0) {
+      throw new Error("Nenhuma imagem encontrada para a busca");
+    }
+    
     return data.results;
   } catch (error) {
     console.error("Erro ao buscar imagens:", error);
