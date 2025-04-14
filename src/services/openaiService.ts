@@ -45,6 +45,7 @@ export async function generateCarouselContent({
     console.log("Enviando requisição para OpenAI com:", {
       model: "gpt-4o",
       apiKey: apiKey ? "Presente (primeiros 4 caracteres): " + apiKey.substring(0, 4) + "..." : "Ausente",
+      prompt: prompt.substring(0, 100) + "..."
     });
 
     const response = await fetch(API_URL, {
@@ -54,7 +55,7 @@ export async function generateCarouselContent({
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-3.5-turbo", // Mudando para um modelo mais estável
         messages: [
           {
             role: "user",
@@ -62,22 +63,44 @@ export async function generateCarouselContent({
           },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 1000,
       }),
     });
 
+    // Tratar erros de resposta HTTP
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Erro da API OpenAI:", errorData);
-      throw new Error(errorData.error?.message || `Erro na API OpenAI: ${response.status}`);
+      let errorMessage = `Erro HTTP: ${response.status}`;
+
+      try {
+        const errorData = await response.json();
+        console.error("Erro da API OpenAI:", errorData);
+        
+        if (errorData.error) {
+          // Mensagens de erro específicas para problemas comuns
+          if (errorData.error.code === "invalid_api_key") {
+            errorMessage = "Chave de API inválida. Verifique se você inseriu corretamente.";
+          } else if (errorData.error.code === "insufficient_quota") {
+            errorMessage = "Sua conta OpenAI não tem créditos suficientes. Verifique seu saldo.";
+          } else if (errorData.error.type === "invalid_request_error") {
+            errorMessage = `Erro de solicitação: ${errorData.error.message}`;
+          } else {
+            errorMessage = errorData.error.message || errorMessage;
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao processar resposta de erro:", e);
+      }
+
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
     console.log("Resposta da OpenAI:", data);
-    const content = data.choices[0]?.message?.content;
+    
+    const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error("Nenhum conteúdo gerado");
+      throw new Error("Nenhum conteúdo foi gerado pela API");
     }
 
     // Extrair os textos numerados do formato de lista
@@ -93,9 +116,16 @@ export async function generateCarouselContent({
 
     // Se não conseguimos extrair com regex, divide por linhas
     if (textArray.length === 0) {
-      return content.split("\n")
+      const lines = content.split("\n")
         .map(line => line.replace(/^\d+\.\s*/, "").trim())
         .filter(line => line.length > 0);
+        
+      if (lines.length > 0) {
+        return lines;
+      } else {
+        // Último recurso: simplesmente retorna o conteúdo como um único texto
+        return [content.trim()];
+      }
     }
 
     return textArray;
