@@ -75,6 +75,22 @@
   .font-opensans {
     font-family: 'Open Sans', sans-serif;
   }
+  
+  .font-lato {
+    font-family: 'Lato', sans-serif;
+  }
+  
+  .font-raleway {
+    font-family: 'Raleway', sans-serif;
+  }
+  
+  .font-oswald {
+    font-family: 'Oswald', sans-serif;
+  }
+  
+  .font-merriweather {
+    font-family: 'Merriweather', serif;
+  }
 }
 
 .drag-item {
@@ -113,4 +129,50 @@
   outline: none;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Filtros de imagem */
+.filter-none {
+  filter: none;
+}
+
+.filter-grayscale {
+  filter: grayscale(100%);
+}
+
+.filter-sepia {
+  filter: sepia(80%);
+}
+
+.filter-blur {
+  filter: blur(2px);
+}
+
+.filter-brightness {
+  filter: brightness(120%);
+}
+
+.filter-contrast {
+  filter: contrast(120%);
+}
+
+.filter-hue-rotate {
+  filter: hue-rotate(90deg);
+}
+
+.filter-invert {
+  filter: invert(80%);
+}
+
+.filter-saturate {
+  filter: saturate(200%);
+}
+
+.filter-vintage {
+  filter: sepia(30%) brightness(90%) contrast(110%);
+}
+
+.image-resizable {
+  resize: both;
+  overflow: hidden;
 }

@@ -25,6 +25,10 @@ export default {
 				'poppins': ['Poppins', 'sans-serif'],
 				'playfair': ['Playfair Display', 'serif'],
 				'opensans': ['Open Sans', 'sans-serif'],
+				'lato': ['Lato', 'sans-serif'],
+				'raleway': ['Raleway', 'sans-serif'],
+				'oswald': ['Oswald', 'sans-serif'],
+				'merriweather': ['Merriweather', 'serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

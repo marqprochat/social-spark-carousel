@@ -10,12 +10,16 @@ export type UnsplashImage = {
   urls: {
     regular: string;
     small: string;
+    thumb: string;
+    raw: string;
   };
   alt_description: string;
   user: {
     name: string;
     username: string;
   };
+  width: number;
+  height: number;
 };
 
 interface SearchImagesProps {
@@ -28,7 +32,7 @@ interface SearchImagesProps {
 export async function searchImages({
   businessInfo,
   accessKey = DEFAULT_ACCESS_KEY,
-  perPage = 20,
+  perPage = 30,
   searchQuery: customQuery,
 }: SearchImagesProps): Promise<UnsplashImage[]> {
   if (!accessKey) {
@@ -43,15 +47,21 @@ export async function searchImages({
   try {
     console.log("Buscando imagens com a chave Unsplash:", accessKey.substring(0, 4) + "...");
     
-    // Use o query personalizado ou construa um com base nas informações do negócio
+    // Construir uma query mais relevante baseada nas informações do negócio
     const searchQuery = customQuery || 
-      `${businessInfo.industry} ${businessInfo.postObjective.replace(/[^\w\s]/g, "")}`.toLowerCase();
+      `${businessInfo.businessName} ${businessInfo.industry} ${businessInfo.targetAudience} ${businessInfo.postObjective}`
+        .toLowerCase()
+        .replace(/[^\w\s]/g, " ")
+        .trim();
+
+    console.log("Termo de busca:", searchQuery);
 
     const url = new URL(UNSPLASH_API_URL);
     url.searchParams.append("query", searchQuery);
     url.searchParams.append("per_page", perPage.toString());
     url.searchParams.append("client_id", accessKey);
-    url.searchParams.append("orientation", "landscape"); // Valores válidos: landscape, portrait, squarish
+    url.searchParams.append("orientation", "landscape"); 
+    url.searchParams.append("content_filter", "high"); // Filtrar por conteúdo de alta qualidade
 
     console.log("URL de busca:", url.toString());
 

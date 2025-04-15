@@ -43,6 +43,24 @@ const TextBox: React.FC<TextBoxProps> = ({
     onTextChange(id, e.currentTarget.innerText);
   };
 
+  // Map font family to CSS class
+  const getFontClass = () => {
+    switch (style.fontFamily) {
+      case "montserrat":
+        return "font-montserrat";
+      case "roboto":
+        return "font-roboto";
+      case "poppins":
+        return "font-poppins";
+      case "playfair":
+        return "font-playfair";
+      case "opensans":
+        return "font-opensans";
+      default:
+        return "font-roboto";
+    }
+  };
+
   return (
     <div
       className={`absolute contenteditable-div cursor-move ${isSelected ? "ring-2 ring-primary" : ""}`}
@@ -52,7 +70,6 @@ const TextBox: React.FC<TextBoxProps> = ({
         transform: "translate(-50%, -50%)",
         color: style.color,
         fontSize: style.fontSize,
-        fontFamily: style.fontFamily,
         backgroundColor: style.backgroundColor,
         padding: style.padding,
         zIndex: isSelected ? 10 : 1,
@@ -81,7 +98,7 @@ const TextBox: React.FC<TextBoxProps> = ({
         onDoubleClick={() => onEdit(id)}
         onBlur={() => isEditing && onEdit("")}
         onInput={handleTextChange}
-        className="outline-none whitespace-pre-wrap break-words text-center"
+        className={`outline-none whitespace-pre-wrap break-words text-center ${getFontClass()}`}
       >
         {text}
       </div>

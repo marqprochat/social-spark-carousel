@@ -10,8 +10,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 import { searchImages, UnsplashImage } from "@/services/unsplashService";
 import { generateCarouselContent } from "@/services/openaiService";
-import { ChevronLeft, ChevronRight, Save, RefreshCw, Image, Type, Plus, TextQuote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, RefreshCw, Image, Type, Plus, TextQuote, Layers, Copy } from "lucide-react";
 import TextBox from "@/components/TextBox";
+import ImageEditor from "@/components/ImageEditor";
+import SlideImages, { SlideImageData } from "@/components/SlideImages";
 import html2canvas from "html2canvas";
 import { v4 as uuidv4 } from "uuid";
 
@@ -31,7 +33,8 @@ type TextBoxItem = {
 type Slide = {
   id: string;
   textBoxes: TextBoxItem[];
-  image: UnsplashImage | null;
+  images: SlideImageData[];
+  backgroundImage: UnsplashImage | null;
 };
 
 interface CarouselCreatorProps {
@@ -46,7 +49,11 @@ const FONT_OPTIONS = [
   { value: "roboto", label: "Roboto" },
   { value: "poppins", label: "Poppins" },
   { value: "playfair", label: "Playfair Display" },
-  { value: "opensans", label: "Open Sans" }
+  { value: "opensans", label: "Open Sans" },
+  { value: "lato", label: "Lato" },
+  { value: "raleway", label: "Raleway" },
+  { value: "oswald", label: "Oswald" },
+  { value: "merriweather", label: "Merriweather" }
 ];
 
 const FONT_SIZE_OPTIONS = [
