@@ -19,6 +19,13 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'montserrat': ['Montserrat', 'sans-serif'],
+				'roboto': ['Roboto', 'sans-serif'],
+				'poppins': ['Poppins', 'sans-serif'],
+				'playfair': ['Playfair Display', 'serif'],
+				'opensans': ['Open Sans', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

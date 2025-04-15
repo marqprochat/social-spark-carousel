@@ -22,12 +22,14 @@ interface SearchImagesProps {
   businessInfo: BusinessInfo;
   accessKey?: string;
   perPage?: number;
+  searchQuery?: string;
 }
 
 export async function searchImages({
   businessInfo,
   accessKey = DEFAULT_ACCESS_KEY,
   perPage = 20,
+  searchQuery: customQuery,
 }: SearchImagesProps): Promise<UnsplashImage[]> {
   if (!accessKey) {
     toast({
@@ -41,17 +43,15 @@ export async function searchImages({
   try {
     console.log("Buscando imagens com a chave Unsplash:", accessKey.substring(0, 4) + "...");
     
-    // Construa uma query que combine vários aspectos do negócio
-    const searchQuery = `${businessInfo.industry} ${businessInfo.postObjective.replace(
-      /[^\w\s]/g,
-      ""
-    )}`.toLowerCase();
+    // Use o query personalizado ou construa um com base nas informações do negócio
+    const searchQuery = customQuery || 
+      `${businessInfo.industry} ${businessInfo.postObjective.replace(/[^\w\s]/g, "")}`.toLowerCase();
 
     const url = new URL(UNSPLASH_API_URL);
     url.searchParams.append("query", searchQuery);
     url.searchParams.append("per_page", perPage.toString());
     url.searchParams.append("client_id", accessKey);
-    url.searchParams.append("orientation", "landscape"); // Mudando para um valor válido: landscape, portrait, ou squarish
+    url.searchParams.append("orientation", "landscape"); // Valores válidos: landscape, portrait, squarish
 
     console.log("URL de busca:", url.toString());
 
@@ -66,6 +66,16 @@ export async function searchImages({
     
     // Verificar se temos resultados antes de retornar
     if (!data.results || data.results.length === 0) {
+      // Tentar novamente com uma busca mais genérica se não houver resultados
+      if (!customQuery) {
+        console.log("Nenhum resultado encontrado. Tentando busca mais genérica...");
+        return searchImages({
+          businessInfo,
+          accessKey,
+          perPage,
+          searchQuery: businessInfo.industry
+        });
+      }
       throw new Error("Nenhuma imagem encontrada para a busca");
     }
     
