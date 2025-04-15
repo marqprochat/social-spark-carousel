@@ -10,39 +10,21 @@ import { useToast } from "@/components/ui/use-toast";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 import { searchImages, UnsplashImage } from "@/services/unsplashService";
 import { generateCarouselContent } from "@/services/openaiService";
-import { ChevronLeft, ChevronRight, Save, RefreshCw, Image, Type, Plus, TextQuote, Layers, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, RefreshCw, Image, Type, Plus, TextQuote } from "lucide-react";
 import TextBox from "@/components/TextBox";
 import ImageEditor from "@/components/ImageEditor";
 import SlideImages, { SlideImageData } from "@/components/SlideImages";
 import html2canvas from "html2canvas";
 import { v4 as uuidv4 } from "uuid";
-
-type TextBoxItem = {
-  id: string;
-  text: string;
-  position: { x: number; y: number };
-  style: {
-    color: string;
-    fontSize: string;
-    fontFamily: string;
-    backgroundColor: string;
-    padding: string;
-  };
-};
-
-type Slide = {
-  id: string;
-  textBoxes: TextBoxItem[];
-  images: SlideImageData[];
-  backgroundImage: UnsplashImage | null;
-};
-
-interface CarouselCreatorProps {
-  businessInfo: BusinessInfo;
-  openAiKey: string;
-  unsplashKey: string;
-  onBack: () => void;
-}
+import { 
+  Slide,
+  ImageEditorTab,
+  initializeSlides,
+  addImageToSlide,
+  updateImageInSlide,
+  deleteImageFromSlide
+} from "@/components/CarouselCreatorExtension";
+import { AddImageDialog } from "@/components/CarouselCreatorImageExtension";
 
 const FONT_OPTIONS = [
   { value: "montserrat", label: "Montserrat" },
@@ -61,8 +43,16 @@ const FONT_SIZE_OPTIONS = [
   { value: "20px", label: "Médio (20px)" },
   { value: "24px", label: "Grande (24px)" },
   { value: "32px", label: "Muito Grande (32px)" },
-  { value: "40px", label: "Extra Grande (40px)" }
+  { value: "40px", label: "Extra Grande (40px)" },
+  { value: "48px", label: "Super Grande (48px)" }
 ];
+
+interface CarouselCreatorProps {
+  businessInfo: BusinessInfo;
+  openAiKey: string;
+  unsplashKey: string;
+  onBack: () => void;
+}
 
 const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   businessInfo,
@@ -82,9 +72,15 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   const [editingTextBoxId, setEditingTextBoxId] = useState<string | null>(null);
   const [draggedTextBoxId, setDraggedTextBoxId] = useState<string | null>(null);
   
+  // Estado para gerenciar imagens
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [imageFilter, setImageFilter] = useState("none");
+  const [imageSize, setImageSize] = useState({ width: 80, height: 80 });
+  const [imageOpacity, setImageOpacity] = useState(1);
+  
   // Estado para estilização do texto
   const [currentTextColor, setCurrentTextColor] = useState("#ffffff");
-  const [currentFontSize, setCurrentFontSize] = useState("20px");
+  const [currentFontSize, setCurrentFontSize] = useState("24px");
   const [currentFontFamily, setCurrentFontFamily] = useState("roboto");
   const [currentBgColor, setCurrentBgColor] = useState("rgba(0,0,0,0.5)");
   const [currentBgOpacity, setCurrentBgOpacity] = useState("0.5");
@@ -109,23 +105,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         setImages(fetchedImages);
         
         // Criar slides com os textos e imagens
-        const newSlides = generatedTexts.map((text, index) => ({
-          id: `slide-${Date.now()}-${index}`,
-          textBoxes: [{
-            id: uuidv4(),
-            text: text,
-            position: { x: 50, y: 50 }, // Posição central inicial
-            style: {
-              color: "#ffffff",
-              fontSize: "20px",
-              fontFamily: "roboto",
-              backgroundColor: "rgba(0,0,0,0.5)",
-              padding: "10px"
-            }
-          }],
-          image: fetchedImages[index % fetchedImages.length] || null,
-        }));
-        
+        const newSlides = initializeSlides(generatedTexts, fetchedImages);
         setSlides(newSlides);
       } catch (error) {
         console.error("Erro ao inicializar carrossel:", error);
@@ -166,6 +146,20 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       }
     }
   }, [selectedTextBoxId, currentSlideIndex, slides]);
+
+  // Atualizar dados da imagem selecionada
+  useEffect(() => {
+    if (slides.length > 0 && selectedImageId) {
+      const currentSlide = slides[currentSlideIndex];
+      const selectedImage = currentSlide.images.find(img => img.id === selectedImageId);
+      
+      if (selectedImage) {
+        setImageFilter(selectedImage.filter || "none");
+        setImageSize(selectedImage.size);
+        setImageOpacity(selectedImage.opacity);
+      }
+    }
+  }, [selectedImageId, currentSlideIndex, slides]);
   
   // Buscar novas imagens com termo de pesquisa
   const handleSearchImages = async () => {
@@ -247,14 +241,70 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   // Atualizar imagem do slide atual
   const updateSlideImage = (image: UnsplashImage) => {
     const updatedSlides = [...slides];
-    updatedSlides[currentSlideIndex].image = image;
+    updatedSlides[currentSlideIndex].backgroundImage = image;
     setSlides(updatedSlides);
+  };
+
+  // Gerenciamento de imagens nos slides
+  const handleAddImage = (imageData: SlideImageData) => {
+    setSlides(addImageToSlide(slides, currentSlideIndex, imageData));
+  };
+
+  const handleUpdateImage = (imageId: string, updates: Partial<SlideImageData>) => {
+    setSlides(updateImageInSlide(slides, currentSlideIndex, imageId, updates));
+  };
+
+  const handleDeleteImage = (imageId: string) => {
+    setSlides(deleteImageFromSlide(slides, currentSlideIndex, imageId));
+    if (selectedImageId === imageId) {
+      setSelectedImageId(null);
+    }
+  };
+
+  const handleImageFilterChange = (filter: string) => {
+    setImageFilter(filter);
+    if (selectedImageId) {
+      handleUpdateImage(selectedImageId, { filter });
+    }
+  };
+
+  const handleImageSizeChange = (size: { width: number; height: number }) => {
+    setImageSize(size);
+    if (selectedImageId) {
+      handleUpdateImage(selectedImageId, { size });
+    }
+  };
+
+  const handleImageOpacityChange = (opacity: number) => {
+    setImageOpacity(opacity);
+    if (selectedImageId) {
+      handleUpdateImage(selectedImageId, { opacity });
+    }
+  };
+
+  const handleArrangeImage = (imageId: string, direction: 'forward' | 'backward') => {
+    const updatedSlides = [...slides];
+    const currentImages = [...updatedSlides[currentSlideIndex].images];
+    const imageIndex = currentImages.findIndex(img => img.id === imageId);
+    
+    if (imageIndex === -1) return;
+    
+    const image = currentImages[imageIndex];
+    
+    if (direction === 'forward') {
+      // Increase z-index to bring forward
+      handleUpdateImage(imageId, { zIndex: (image.zIndex || 1) + 1 });
+    } else {
+      // Decrease z-index to send backward, but not less than 1
+      handleUpdateImage(imageId, { zIndex: Math.max(1, (image.zIndex || 1) - 1) });
+    }
   };
   
   // Navegação de slides
   const goToPrevSlide = () => {
     setSelectedTextBoxId(null);
     setEditingTextBoxId(null);
+    setSelectedImageId(null);
     setCurrentSlideIndex((prev) => 
       prev === 0 ? slides.length - 1 : prev - 1
     );
@@ -263,6 +313,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   const goToNextSlide = () => {
     setSelectedTextBoxId(null);
     setEditingTextBoxId(null);
+    setSelectedImageId(null);
     setCurrentSlideIndex((prev) => 
       prev === slides.length - 1 ? 0 : prev + 1
     );
@@ -273,7 +324,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     const updatedSlides = [...slides];
     const currentSlide = updatedSlides[currentSlideIndex];
     
-    const newTextBox: TextBoxItem = {
+    const newTextBox = {
       id: uuidv4(),
       text: "Clique duas vezes para editar",
       position: { x: 50, y: 50 },
@@ -295,6 +346,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   const selectTextBox = (id: string) => {
     setSelectedTextBoxId(id);
     setEditingTextBoxId(null);
+    setSelectedImageId(null);
   };
   
   // Editar textbox
@@ -440,6 +492,12 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     currentSlide.textBoxes[textBoxIndex] = updatedTextBox;
     setSlides(updatedSlides);
   };
+
+  const handleImageSelect = (id: string) => {
+    setSelectedImageId(id);
+    setSelectedTextBoxId(null);
+    setEditingTextBoxId(null);
+  };
   
   // Exportar slide atual como imagem
   const exportSlide = async () => {
@@ -451,9 +509,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       const originalDraggedId = draggedTextBoxId;
       const originalEditingId = editingTextBoxId;
       const originalSelectedId = selectedTextBoxId;
+      const originalSelectedImageId = selectedImageId;
       setDraggedTextBoxId(null);
       setEditingTextBoxId(null);
       setSelectedTextBoxId(null);
+      setSelectedImageId(null);
       
       // Pequeno delay para garantir que as mudanças de estilo foram aplicadas
       setTimeout(async () => {
@@ -487,6 +547,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
           setDraggedTextBoxId(originalDraggedId);
           setEditingTextBoxId(originalEditingId);
           setSelectedTextBoxId(originalSelectedId);
+          setSelectedImageId(originalSelectedImageId);
         }
       }, 100);
     } catch (error) {
@@ -546,13 +607,23 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
             onMouseUp={draggedTextBoxId ? handleMouseUp : undefined}
             onMouseLeave={draggedTextBoxId ? handleMouseUp : undefined}
           >
-            {currentSlide?.image && (
+            {currentSlide?.backgroundImage && (
               <img
-                src={currentSlide.image.urls.regular}
-                alt={currentSlide.image.alt_description || "Imagem do slide"}
+                src={currentSlide.backgroundImage.urls.regular}
+                alt={currentSlide.backgroundImage.alt_description || "Imagem do slide"}
                 className="w-full h-full object-cover"
               />
             )}
+            
+            {currentSlide && <SlideImages 
+              images={currentSlide.images}
+              onSelect={handleImageSelect}
+              selectedId={selectedImageId}
+              onDelete={handleDeleteImage}
+              onPositionChange={(id, position) => {
+                handleUpdateImage(id, { position });
+              }}
+            />}
             
             {currentSlide?.textBoxes.map((textBox) => (
               <TextBox
@@ -746,6 +817,23 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
               </TabsContent>
               
               <TabsContent value="image" className="space-y-4">
+                {currentSlide && (
+                  <ImageEditorTab
+                    currentSlide={currentSlide}
+                    selectedImageId={selectedImageId}
+                    imageFilter={imageFilter}
+                    imageSize={imageSize}
+                    imageOpacity={imageOpacity}
+                    onFilterChange={handleImageFilterChange}
+                    onSizeChange={handleImageSizeChange}
+                    onOpacityChange={handleImageOpacityChange}
+                    onAddImage={handleAddImage}
+                    onArrangeImage={handleArrangeImage}
+                    images={images}
+                    isLoading={isLoading}
+                  />
+                )}
+
                 <div className="space-y-2">
                   <div className="flex space-x-2">
                     <Input
@@ -757,29 +845,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                     <Button onClick={handleSearchImages} disabled={isLoading}>
                       Buscar
                     </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto p-1">
-                    {images.map((image) => (
-                      <div
-                        key={image.id}
-                        className={`cursor-pointer rounded overflow-hidden h-[60px] ${
-                          currentSlide?.image?.id === image.id ? "ring-2 ring-primary" : ""
-                        }`}
-                        onClick={() => updateSlideImage(image)}
-                      >
-                        <img
-                          src={image.urls.small}
-                          alt={image.alt_description || "Imagem do Unsplash"}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                    {isLoading && (
-                      <div className="col-span-3 flex justify-center py-4">
-                        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -823,10 +888,10 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                 onClick={() => setCurrentSlideIndex(index)}
               >
                 <div className="relative aspect-square">
-                  {slide.image && (
+                  {slide.backgroundImage && (
                     <img
-                      src={slide.image.urls.small}
-                      alt={slide.image.alt_description || "Imagem do slide"}
+                      src={slide.backgroundImage.urls.small}
+                      alt={slide.backgroundImage.alt_description || "Imagem do slide"}
                       className="w-full h-full object-cover"
                     />
                   )}

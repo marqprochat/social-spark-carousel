@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { UnsplashImage } from "@/services/unsplashService";
@@ -6,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Image, Plus, Layers } from "lucide-react";
+import { AddImageDialog } from "./CarouselCreatorImageExtension";
+import ImageEditor from "@/components/ImageEditor";
 
 // This file contains extension methods and types for the CarouselCreator component
 
@@ -18,7 +21,7 @@ export const initializeSlides = (texts: string[], images: UnsplashImage[]): Slid
       position: { x: 50, y: 50 },
       style: {
         color: "#ffffff",
-        fontSize: "20px",
+        fontSize: "24px",
         fontFamily: "roboto",
         backgroundColor: "rgba(0,0,0,0.5)",
         padding: "10px"
@@ -108,6 +111,9 @@ export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
   images,
   isLoading
 }) => {
+  const selectedImage = selectedImageId ? 
+    currentSlide.images.find(img => img.id === selectedImageId)?.image : null;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -119,7 +125,7 @@ export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
             onClick={() => selectedImageId && onArrangeImage(selectedImageId, 'forward')}
             disabled={!selectedImageId}
           >
-            <Layers className="h-4 w-4" />
+            <Layers className="h-4 w-4 mr-1" />
             Trazer para Frente
           </Button>
           <AddImageDialog 
@@ -142,9 +148,7 @@ export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
         
         <TabsContent value="edit">
           <ImageEditor 
-            currentSlideImage={selectedImageId ? 
-              currentSlide.images.find(img => img.id === selectedImageId)?.image || null : 
-              currentSlide.backgroundImage}
+            currentSlideImage={selectedImage || currentSlide.backgroundImage}
             imageFilter={imageFilter}
             imageSize={imageSize}
             onFilterChange={onFilterChange}
@@ -193,8 +197,6 @@ export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
     </div>
   );
 };
-
-import { AddImageDialog } from "./CarouselCreatorImageExtension";
 
 // Export the slide type for use in other components
 export type Slide = {

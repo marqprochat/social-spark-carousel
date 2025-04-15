@@ -91,6 +91,23 @@
   .font-merriweather {
     font-family: 'Merriweather', serif;
   }
+  
+  /* Adicionar mais estilos de fonte */
+  .font-dancingscript {
+    font-family: 'Dancing Script', cursive;
+  }
+  
+  .font-pacifico {
+    font-family: 'Pacifico', cursive;
+  }
+  
+  .font-quicksand {
+    font-family: 'Quicksand', sans-serif;
+  }
+  
+  .font-comforter {
+    font-family: 'Comforter', cursive;
+  }
 }
 
 .drag-item {
