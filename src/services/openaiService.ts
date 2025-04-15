@@ -1,5 +1,5 @@
 
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 
 const API_URL = "https://api.openai.com/v1/chat/completions";
@@ -18,11 +18,7 @@ export async function generateCarouselContent({
 }: GenerateTextProps): Promise<string[]> {
   // Validar API key
   if (!apiKey) {
-    toast({
-      title: "API Key Necessária",
-      description: "Por favor, forneça uma chave API válida da OpenAI.",
-      variant: "destructive",
-    });
+    toast.error("Por favor, forneça uma chave API válida da OpenAI.");
     return [];
   }
 
@@ -132,13 +128,9 @@ export async function generateCarouselContent({
     return textArray;
   } catch (error) {
     console.error("Erro ao gerar textos:", error);
-    toast({
-      title: "Erro na API da OpenAI",
-      description: error instanceof Error 
-        ? error.message 
-        : "Falha na conexão com a API da OpenAI. Verifique sua chave de API e conexão.",
-      variant: "destructive",
-    });
+    toast.error(error instanceof Error 
+      ? error.message 
+      : "Falha na conexão com a API da OpenAI. Verifique sua chave de API e conexão.");
     return [];
   }
 }

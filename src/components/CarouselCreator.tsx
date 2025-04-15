@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -66,18 +65,15 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   const [images, setImages] = useState<UnsplashImage[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Estado para gerenciar os textboxes
   const [selectedTextBoxId, setSelectedTextBoxId] = useState<string | null>(null);
   const [editingTextBoxId, setEditingTextBoxId] = useState<string | null>(null);
   const [draggedTextBoxId, setDraggedTextBoxId] = useState<string | null>(null);
   
-  // Estado para gerenciar imagens
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [imageFilter, setImageFilter] = useState("none");
   const [imageSize, setImageSize] = useState({ width: 80, height: 80 });
   const [imageOpacity, setImageOpacity] = useState(1);
   
-  // Estado para estilização do texto
   const [currentTextColor, setCurrentTextColor] = useState("#ffffff");
   const [currentFontSize, setCurrentFontSize] = useState("24px");
   const [currentFontFamily, setCurrentFontFamily] = useState("roboto");
@@ -85,13 +81,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   const [currentBgOpacity, setCurrentBgOpacity] = useState("0.5");
   const [currentPadding, setCurrentPadding] = useState("10px");
   
-  // Inicialização - buscar imagens e textos
   useEffect(() => {
     const initializeCarousel = async () => {
       try {
         setIsLoading(true);
         
-        // Buscar imagens e textos em paralelo
         const [fetchedImages, generatedTexts] = await Promise.all([
           searchImages({ businessInfo, accessKey: unsplashKey }),
           generateCarouselContent({ businessInfo, apiKey: openAiKey, numSlides: 5 }),
@@ -103,7 +97,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         
         setImages(fetchedImages);
         
-        // Criar slides com os textos e imagens
         const newSlides = initializeSlides(generatedTexts, fetchedImages);
         setSlides(newSlides);
       } catch (error) {
@@ -126,13 +119,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       const selectedTextBox = currentSlide.textBoxes.find(box => box.id === selectedTextBoxId);
       
       if (selectedTextBox) {
-        // Atualizar os controles de estilo com os valores do textbox selecionado
         setCurrentTextColor(selectedTextBox.style.color);
         setCurrentFontSize(selectedTextBox.style.fontSize);
         setCurrentFontFamily(selectedTextBox.style.fontFamily);
         setCurrentBgColor(selectedTextBox.style.backgroundColor);
         
-        // Extrair a opacidade do backgroundColor rgba
         const opacityMatch = selectedTextBox.style.backgroundColor.match(/[^,]+(?=\))/);
         if (opacityMatch) {
           setCurrentBgOpacity(opacityMatch[0]);
@@ -143,7 +134,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   }, [selectedTextBoxId, currentSlideIndex, slides]);
 
-  // Atualizar dados da imagem selecionada
   useEffect(() => {
     if (slides.length > 0 && selectedImageId) {
       const currentSlide = slides[currentSlideIndex];
@@ -157,7 +147,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   }, [selectedImageId, currentSlideIndex, slides]);
   
-  // Buscar novas imagens com termo de pesquisa
   const handleSearchImages = async () => {
     try {
       setIsLoading(true);
@@ -187,10 +176,12 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   };
   
-  // Gerar novos textos
   const handleRegenerateTexts = async () => {
     try {
       setIsLoading(true);
+      
+      toast.loading("Gerando novos textos...");
+      
       const generatedTexts = await generateCarouselContent({
         businessInfo,
         apiKey: openAiKey,
@@ -201,10 +192,9 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         throw new Error("Nenhum texto gerado");
       }
       
-      const updatedSlides = slides.map((slide, index) => {
-        // Atualizar apenas o primeiro textbox de cada slide com o novo texto
+      const updatedSlides = [...slides].map((slide, index) => {
         const updatedTextBoxes = [...slide.textBoxes];
-        if (updatedTextBoxes.length > 0) {
+        if (updatedTextBoxes.length > 0 && index < generatedTexts.length) {
           updatedTextBoxes[0] = {
             ...updatedTextBoxes[0],
             text: generatedTexts[index] || updatedTextBoxes[0].text
@@ -218,7 +208,9 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       });
       
       setSlides(updatedSlides);
+      toast.success("Textos gerados com sucesso!");
     } catch (error) {
+      console.error("Erro ao gerar textos:", error);
       toast.error(error instanceof Error 
         ? error.message 
         : "Erro ao gerar textos"
@@ -228,14 +220,12 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   };
   
-  // Atualizar imagem do slide atual
   const updateSlideImage = (image: UnsplashImage) => {
     const updatedSlides = [...slides];
     updatedSlides[currentSlideIndex].backgroundImage = image;
     setSlides(updatedSlides);
   };
 
-  // Gerenciamento de imagens nos slides
   const handleAddImage = (imageData: SlideImageData) => {
     setSlides(addImageToSlide(slides, currentSlideIndex, imageData));
   };
@@ -282,15 +272,12 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     const image = currentImages[imageIndex];
     
     if (direction === 'forward') {
-      // Increase z-index to bring forward
       handleUpdateImage(imageId, { zIndex: (image.zIndex || 1) + 1 });
     } else {
-      // Decrease z-index to send backward, but not less than 1
       handleUpdateImage(imageId, { zIndex: Math.max(1, (image.zIndex || 1) - 1) });
     }
   };
   
-  // Navegação de slides
   const goToPrevSlide = () => {
     setSelectedTextBoxId(null);
     setEditingTextBoxId(null);
@@ -309,7 +296,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     );
   };
   
-  // Adicionar novo textbox
   const addNewTextBox = () => {
     const updatedSlides = [...slides];
     const currentSlide = updatedSlides[currentSlideIndex];
@@ -332,24 +318,20 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     setSelectedTextBoxId(newTextBox.id);
   };
   
-  // Selecionar textbox
   const selectTextBox = (id: string) => {
     setSelectedTextBoxId(id);
     setEditingTextBoxId(null);
     setSelectedImageId(null);
   };
   
-  // Editar textbox
   const toggleEditingTextBox = (id: string) => {
     setEditingTextBoxId(id === editingTextBoxId ? null : id);
   };
   
-  // Excluir textbox
   const deleteTextBox = (id: string) => {
     const updatedSlides = [...slides];
     const currentSlide = updatedSlides[currentSlideIndex];
     
-    // Impedir a exclusão se houver apenas um textbox
     if (currentSlide.textBoxes.length <= 1) {
       toast.warning("Cada slide precisa ter pelo menos um texto");
       return;
@@ -367,7 +349,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   };
   
-  // Alterar texto
   const updateTextContent = (id: string, text: string) => {
     const updatedSlides = [...slides];
     const currentSlide = updatedSlides[currentSlideIndex];
@@ -379,13 +360,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   };
   
-  // Drag and Drop de texto
   const handleDragStart = (e: React.MouseEvent, id: string) => {
-    // Começar a arrastar apenas se não estiver editando o texto
     if (editingTextBoxId !== id) {
       setDraggedTextBoxId(id);
       selectTextBox(id);
-      e.preventDefault(); // Prevenir seleção de texto
+      e.preventDefault();
     }
   };
   
@@ -397,11 +376,9 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     
     const rect = slideElement.getBoundingClientRect();
     
-    // Calcula a posição relativa dentro do slide
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     
-    // Limites para garantir que o texto fique dentro do slide
     const boundedX = Math.max(0, Math.min(100, x));
     const boundedY = Math.max(0, Math.min(100, y));
     
@@ -419,7 +396,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     setDraggedTextBoxId(null);
   };
   
-  // Atualizar estilo de texto
   const updateTextStyle = (property: string, value: string) => {
     if (!selectedTextBoxId) return;
     
@@ -445,7 +421,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         setCurrentFontFamily(value);
         break;
       case "backgroundColor":
-        // Atualizar apenas a cor mantendo a opacidade
         const rgba = updatedTextBox.style.backgroundColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+)/);
         if (rgba) {
           const r = parseInt(value.slice(1, 3), 16);
@@ -462,7 +437,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         }
         break;
       case "bgOpacity":
-        // Atualizar apenas a opacidade mantendo a cor
         const rgbaColor = updatedTextBox.style.backgroundColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+)/);
         if (rgbaColor) {
           updatedTextBox.style.backgroundColor = `rgba(${rgbaColor[1]}, ${rgbaColor[2]}, ${rgbaColor[3]}, ${value})`;
@@ -486,13 +460,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     setEditingTextBoxId(null);
   };
   
-  // Exportar slide atual como imagem
   const exportSlide = async () => {
     try {
       const slideElement = document.getElementById('slide-canvas');
       if (!slideElement) return;
       
-      // Temporariamente remover indicadores de edição
       const originalDraggedId = draggedTextBoxId;
       const originalEditingId = editingTextBoxId;
       const originalSelectedId = selectedTextBoxId;
@@ -502,13 +474,12 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       setSelectedTextBoxId(null);
       setSelectedImageId(null);
       
-      // Pequeno delay para garantir que as mudanças de estilo foram aplicadas
       setTimeout(async () => {
         try {
           const canvas = await html2canvas(slideElement, {
             allowTaint: true,
             useCORS: true,
-            scale: 2, // Melhor qualidade
+            scale: 2,
             logging: false,
           });
           
@@ -523,7 +494,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
           console.error("Erro ao exportar slide:", error);
           toast.error("Não foi possível exportar o slide");
         } finally {
-          // Restaurar estados originais
           setDraggedTextBoxId(originalDraggedId);
           setEditingTextBoxId(originalEditingId);
           setSelectedTextBoxId(originalSelectedId);
@@ -536,18 +506,15 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   };
   
-  // Exportar todos os slides
   const exportAllSlides = async () => {
     const originalSlideIndex = currentSlideIndex;
     
     for (let i = 0; i < slides.length; i++) {
       setCurrentSlideIndex(i);
-      // Pequeno delay para garantir que o slide foi renderizado
       await new Promise(resolve => setTimeout(resolve, 300));
       await exportSlide();
     }
     
-    // Restaurar slide original
     setCurrentSlideIndex(originalSlideIndex);
   };
   
@@ -572,7 +539,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   return (
     <div className="w-full max-w-6xl mx-auto p-4 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Área do Carrossel */}
         <div className="w-full lg:w-1/2 flex flex-col">
           <h2 className="text-2xl font-semibold mb-4">Editor de Carrossel</h2>
           
@@ -787,7 +753,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                   className="w-full"
                   disabled={isLoading}
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                   Gerar Novos Textos
                 </Button>
               </TabsContent>
@@ -850,7 +816,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
           </Button>
         </div>
         
-        {/* Exibição dos Slides */}
         <div className="w-full lg:w-1/2">
           <h2 className="text-2xl font-semibold mb-4">Pré-visualização do Carrossel</h2>
           
