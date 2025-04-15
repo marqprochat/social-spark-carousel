@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner"; // Updated to use sonner toast
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 import { searchImages, UnsplashImage } from "@/services/unsplashService";
 import { generateCarouselContent } from "@/services/openaiService";
@@ -60,7 +59,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   unsplashKey,
   onBack,
 }) => {
-  const { toast } = useToast();
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,20 +107,17 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         setSlides(newSlides);
       } catch (error) {
         console.error("Erro ao inicializar carrossel:", error);
-        toast({
-          title: "Erro",
-          description: error instanceof Error 
-            ? error.message 
-            : "Erro ao criar carrossel. Por favor, tente novamente.",
-          variant: "destructive",
-        });
+        toast.error(error instanceof Error 
+          ? error.message 
+          : "Erro ao criar carrossel. Por favor, tente novamente."
+        );
       } finally {
         setIsLoading(false);
       }
     };
     
     initializeCarousel();
-  }, [businessInfo, openAiKey, unsplashKey, toast]);
+  }, [businessInfo, openAiKey, unsplashKey]);
   
   useEffect(() => {
     if (slides.length > 0 && selectedTextBoxId) {
@@ -182,13 +177,10 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       
       setImages(fetchedImages);
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: error instanceof Error 
-          ? error.message 
-          : "Erro ao buscar imagens",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error 
+        ? error.message 
+        : "Erro ao buscar imagens"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -226,13 +218,10 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       
       setSlides(updatedSlides);
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: error instanceof Error 
-          ? error.message 
-          : "Erro ao gerar textos",
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error 
+        ? error.message 
+        : "Erro ao gerar textos"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -361,10 +350,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     
     // Impedir a exclusão se houver apenas um textbox
     if (currentSlide.textBoxes.length <= 1) {
-      toast({
-        title: "Aviso",
-        description: "Cada slide precisa ter pelo menos um texto",
-      });
+      toast.warning("Cada slide precisa ter pelo menos um texto");
       return;
     }
     
@@ -531,17 +517,10 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
           link.href = imgData;
           link.click();
           
-          toast({
-            title: "Sucesso!",
-            description: "Slide exportado com sucesso",
-          });
+          toast.success("Slide exportado com sucesso");
         } catch (error) {
           console.error("Erro ao exportar slide:", error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível exportar o slide",
-            variant: "destructive",
-          });
+          toast.error("Não foi possível exportar o slide");
         } finally {
           // Restaurar estados originais
           setDraggedTextBoxId(originalDraggedId);
@@ -552,11 +531,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
       }, 100);
     } catch (error) {
       console.error("Erro ao exportar:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível exportar o slide",
-        variant: "destructive",
-      });
+      toast.error("Não foi possível exportar o slide");
     }
   };
   
@@ -594,6 +569,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   }
   
   return (
+    
     <div className="w-full max-w-6xl mx-auto p-4 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Área do Carrossel */}
@@ -908,41 +884,4 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                         fontFamily: textBox.style.fontFamily,
                         fontSize: `calc(${textBox.style.fontSize} * 0.5)`,
                         backgroundColor: textBox.style.backgroundColor,
-                        padding: textBox.style.padding,
-                        maxWidth: '80%',
-                        textAlign: 'center',
-                        wordBreak: 'break-word'
-                      }}
-                    >
-                      {textBox.text}
-                    </div>
-                  ))}
-                  
-                  <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                    {index + 1}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="mt-6 bg-secondary p-4 rounded-lg">
-            <h3 className="font-medium mb-2">Como utilizar:</h3>
-            <ul className="text-sm space-y-2 list-disc pl-5">
-              <li>Clique em um slide na pré-visualização para editá-lo</li>
-              <li>Clique em "Adicionar Texto" para incluir mais textos no slide</li>
-              <li>Selecione um texto clicando nele para editá-lo</li>
-              <li>Arraste o texto para posicioná-lo onde desejar</li>
-              <li>Dê duplo clique no texto para editá-lo</li>
-              <li>Use as abas para formatar o texto ou trocar a imagem</li>
-              <li>Experimente diferentes fontes para tornar seu carrossel único</li>
-              <li>Clique em "Salvar Slide" para exportar o slide atual</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default CarouselCreator;
+                        padding

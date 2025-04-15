@@ -30,7 +30,7 @@ export const SlideImage: React.FC<SlideImageProps> = ({
   onDragStart,
   zIndex,
 }) => {
-  const [isHovering, setIsHovering] = useState(false);
+  const [isHovering, setIsHovering] = React.useState(false);
 
   return (
     <div
@@ -101,8 +101,8 @@ interface SlideImagesProps {
   images: SlideImageData[];
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
-  selectedImageId: string | null;
-  onDragStart: (e: React.MouseEvent, id: string) => void;
+  selectedId: string | null; // Fixed property name to match what's being passed
+  onDragStart?: (e: React.MouseEvent, id: string) => void;
   onPositionChange: (id: string, position: { x: number; y: number }) => void;
 }
 
@@ -110,8 +110,8 @@ const SlideImages: React.FC<SlideImagesProps> = ({
   images,
   onSelect,
   onDelete,
-  selectedImageId,
-  onDragStart,
+  selectedId,
+  onDragStart = () => {}, // Default empty function to prevent errors
   onPositionChange,
 }) => {
   if (!images.length) return null;
@@ -126,7 +126,7 @@ const SlideImages: React.FC<SlideImagesProps> = ({
           size={slideImage.size}
           opacity={slideImage.opacity}
           filter={slideImage.filter}
-          isSelected={selectedImageId === slideImage.id}
+          isSelected={selectedId === slideImage.id}
           onSelect={() => onSelect(slideImage.id)}
           onDelete={() => onDelete(slideImage.id)}
           onDragStart={(e) => onDragStart(e, slideImage.id)}
