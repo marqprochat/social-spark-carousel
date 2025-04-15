@@ -1,6 +1,6 @@
 
 import { BusinessInfo } from "@/components/BusinessInfoForm";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 const UNSPLASH_API_URL = "https://api.unsplash.com/search/photos";
 const DEFAULT_ACCESS_KEY = "oFdbSDmB4dckb0NWVq4QTHDPjAg2AVw0BbkjJt6TZpo";
@@ -36,11 +36,7 @@ export async function searchImages({
   searchQuery: customQuery,
 }: SearchImagesProps): Promise<UnsplashImage[]> {
   if (!accessKey) {
-    toast({
-      title: "Access Key Necessária",
-      description: "Por favor, forneça uma chave de acesso válida da Unsplash.",
-      variant: "destructive",
-    });
+    toast.error("Por favor, forneça uma chave de acesso válida da Unsplash.");
     return [];
   }
 
@@ -48,12 +44,36 @@ export async function searchImages({
     console.log("Buscando imagens com a chave Unsplash:", accessKey.substring(0, 4) + "...");
     
     // Construir uma query mais relevante baseada nas informações do negócio
-    const searchQuery = customQuery || 
-      `${businessInfo.businessName} ${businessInfo.industry} ${businessInfo.targetAudience} ${businessInfo.postObjective}`
-        .toLowerCase()
-        .replace(/[^\w\s]/g, " ")
-        .trim();
-
+    let searchTerms: string[] = [];
+    
+    // Adicionar termos específicos com base no segmento do negócio
+    if (businessInfo.industry) {
+      searchTerms.push(businessInfo.industry);
+    }
+    
+    // Adicionar nome do negócio se não for muito genérico
+    if (businessInfo.businessName && businessInfo.businessName.length > 3) {
+      searchTerms.push(businessInfo.businessName);
+    }
+    
+    // Adicionar público-alvo para imagens mais relevantes
+    if (businessInfo.targetAudience) {
+      searchTerms.push(businessInfo.targetAudience);
+    }
+    
+    // Se houver um objetivo específico, incluí-lo na busca
+    if (businessInfo.postObjective) {
+      // Extrair palavras-chave do objetivo
+      const objectiveKeywords = businessInfo.postObjective
+        .split(' ')
+        .filter(word => word.length > 4)
+        .slice(0, 2);
+      searchTerms = [...searchTerms, ...objectiveKeywords];
+    }
+    
+    // Usar o termo de busca customizado se fornecido, ou construir um com os termos mais relevantes
+    const searchQuery = customQuery || searchTerms.join(' ');
+    
     console.log("Termo de busca:", searchQuery);
 
     const url = new URL(UNSPLASH_API_URL);
@@ -62,6 +82,9 @@ export async function searchImages({
     url.searchParams.append("client_id", accessKey);
     url.searchParams.append("orientation", "landscape"); 
     url.searchParams.append("content_filter", "high"); // Filtrar por conteúdo de alta qualidade
+
+    // Melhorar resultados com ordenação por relevância
+    url.searchParams.append("order_by", "relevant");
 
     console.log("URL de busca:", url.toString());
 
@@ -79,11 +102,15 @@ export async function searchImages({
       // Tentar novamente com uma busca mais genérica se não houver resultados
       if (!customQuery) {
         console.log("Nenhum resultado encontrado. Tentando busca mais genérica...");
+        // Usar apenas a indústria e o objetivo como termos de busca
+        const genericSearchTerm = businessInfo.industry || 
+          (businessInfo.postObjective ? businessInfo.postObjective.split(' ').slice(0, 2).join(' ') : 'marketing');
+        
         return searchImages({
           businessInfo,
           accessKey,
           perPage,
-          searchQuery: businessInfo.industry
+          searchQuery: genericSearchTerm
         });
       }
       throw new Error("Nenhuma imagem encontrada para a busca");
@@ -92,11 +119,7 @@ export async function searchImages({
     return data.results;
   } catch (error) {
     console.error("Erro ao buscar imagens:", error);
-    toast({
-      title: "Erro",
-      description: error instanceof Error ? error.message : "Erro ao buscar imagens",
-      variant: "destructive",
-    });
+    toast.error(error instanceof Error ? error.message : "Erro ao buscar imagens");
     return [];
   }
 }

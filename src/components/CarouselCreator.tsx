@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -80,6 +80,9 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   const [currentBgColor, setCurrentBgColor] = useState("rgba(0,0,0,0.5)");
   const [currentBgOpacity, setCurrentBgOpacity] = useState("0.5");
   const [currentPadding, setCurrentPadding] = useState("10px");
+  
+  const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
+  const slideCanvasRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     const initializeCarousel = async () => {
@@ -360,18 +363,24 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     }
   };
   
-  const handleDragStart = (e: React.MouseEvent, id: string) => {
+  const handleDragStart = useCallback((e: React.MouseEvent, id: string) => {
     if (editingTextBoxId !== id) {
       setDraggedTextBoxId(id);
       selectTextBox(id);
       e.preventDefault();
     }
-  };
+  }, [editingTextBoxId]);
   
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggedTextBoxId) return;
-    
-    const slideElement = document.getElementById('slide-canvas');
+  const handleImageDragStart = useCallback((e: React.MouseEvent, id: string) => {
+    setDraggedImageId(id);
+    setSelectedImageId(id);
+    setSelectedTextBoxId(null);
+    setEditingTextBoxId(null);
+    e.preventDefault();
+  }, []);
+  
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const slideElement = slideCanvasRef.current;
     if (!slideElement) return;
     
     const rect = slideElement.getBoundingClientRect();
@@ -385,16 +394,27 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     const updatedSlides = [...slides];
     const currentSlide = updatedSlides[currentSlideIndex];
     
-    const textBoxIndex = currentSlide.textBoxes.findIndex(box => box.id === draggedTextBoxId);
-    if (textBoxIndex !== -1) {
-      currentSlide.textBoxes[textBoxIndex].position = { x: boundedX, y: boundedY };
-      setSlides(updatedSlides);
+    if (draggedTextBoxId) {
+      const textBoxIndex = currentSlide.textBoxes.findIndex(box => box.id === draggedTextBoxId);
+      if (textBoxIndex !== -1) {
+        currentSlide.textBoxes[textBoxIndex].position = { x: boundedX, y: boundedY };
+        setSlides(updatedSlides);
+      }
     }
-  };
+    
+    if (draggedImageId) {
+      const imageIndex = currentSlide.images.findIndex(img => img.id === draggedImageId);
+      if (imageIndex !== -1) {
+        currentSlide.images[imageIndex].position = { x: boundedX, y: boundedY };
+        setSlides(updatedSlides);
+      }
+    }
+  }, [draggedTextBoxId, draggedImageId, currentSlideIndex, slides]);
   
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setDraggedTextBoxId(null);
-  };
+    setDraggedImageId(null);
+  }, []);
   
   const updateTextStyle = (property: string, value: string) => {
     if (!selectedTextBoxId) return;
@@ -544,10 +564,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
           
           <div 
             id="slide-canvas"
-            className="slide-canvas carousel-container mb-4"
-            onMouseMove={draggedTextBoxId ? handleMouseMove : undefined}
-            onMouseUp={draggedTextBoxId ? handleMouseUp : undefined}
-            onMouseLeave={draggedTextBoxId ? handleMouseUp : undefined}
+            ref={slideCanvasRef}
+            className="slide-canvas carousel-container mb-4 relative"
+            onMouseMove={draggedTextBoxId || draggedImageId ? handleMouseMove : undefined}
+            onMouseUp={draggedTextBoxId || draggedImageId ? handleMouseUp : undefined}
+            onMouseLeave={draggedTextBoxId || draggedImageId ? handleMouseUp : undefined}
           >
             {currentSlide?.backgroundImage && (
               <img
@@ -562,6 +583,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
               onSelect={handleImageSelect}
               selectedId={selectedImageId}
               onDelete={handleDeleteImage}
+              onDragStart={handleImageDragStart}
               onPositionChange={(id, position) => {
                 handleUpdateImage(id, { position });
               }}

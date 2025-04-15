@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { UnsplashImage } from "@/services/unsplashService";
 import { X, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -85,9 +85,7 @@ export const SlideImage: React.FC<SlideImageProps> = ({
   );
 };
 
-import { useState } from "react";
-
-export interface SlideImageData {
+interface SlideImageData {
   id: string;
   image: UnsplashImage;
   position: { x: number; y: number };
@@ -101,8 +99,8 @@ interface SlideImagesProps {
   images: SlideImageData[];
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
-  selectedId: string | null; // Fixed property name to match what's being passed
-  onDragStart?: (e: React.MouseEvent, id: string) => void;
+  selectedId: string | null;
+  onDragStart: (e: React.MouseEvent, id: string) => void;
   onPositionChange: (id: string, position: { x: number; y: number }) => void;
 }
 
@@ -111,7 +109,7 @@ const SlideImages: React.FC<SlideImagesProps> = ({
   onSelect,
   onDelete,
   selectedId,
-  onDragStart = () => {}, // Default empty function to prevent errors
+  onDragStart,
   onPositionChange,
 }) => {
   if (!images.length) return null;
@@ -139,3 +137,4 @@ const SlideImages: React.FC<SlideImagesProps> = ({
 };
 
 export default SlideImages;
+export type { SlideImageData };

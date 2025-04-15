@@ -43,8 +43,20 @@ const TextBox: React.FC<TextBoxProps> = ({
     onTextChange(id, e.currentTarget.innerText);
   };
 
-  // Generate the font class name based on the fontFamily property
-  const fontClass = `font-${style.fontFamily}`;
+  // Map font family to Tailwind class
+  const fontFamilyMap: Record<string, string> = {
+    montserrat: "font-montserrat",
+    roboto: "font-roboto",
+    poppins: "font-poppins",
+    playfair: "font-playfair",
+    opensans: "font-opensans",
+    lato: "font-lato",
+    raleway: "font-raleway",
+    oswald: "font-oswald",
+    merriweather: "font-merriweather"
+  };
+
+  const fontClass = fontFamilyMap[style.fontFamily] || "font-sans";
 
   return (
     <div
@@ -62,7 +74,10 @@ const TextBox: React.FC<TextBoxProps> = ({
         maxWidth: "80%",
       }}
       onClick={() => onSelect(id)}
-      onMouseDown={(e) => onDragStart(e, id)}
+      onMouseDown={(e) => {
+        e.preventDefault(); // Prevent text selection during drag
+        onDragStart(e, id);
+      }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >

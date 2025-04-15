@@ -33,17 +33,19 @@ export async function generateCarouselContent({
       Tom de comunicação: ${businessInfo.tone}
       ${businessInfo.additionalInfo ? `Informações adicionais: ${businessInfo.additionalInfo}` : ''}
       
-      Cada texto deve ter no máximo 200 caracteres, ser direto e adequado para um slide único. 
+      Os textos devem ser:
+      1. Específicos e relevantes para o segmento do negócio
+      2. Direcionados especificamente ao público-alvo mencionado
+      3. Adequados ao tom de comunicação solicitado
+      4. Focados no objetivo de marketing informado
+      5. Diretos e impactantes, com no máximo 200 caracteres
+      
+      IMPORTANTE: Cada texto deve ter no máximo 200 caracteres, ser direto e adequado para um slide único. 
       Formate cada texto como um item em uma lista, numerado de 1 a ${numSlides}.
-      Não inclua títulos ou introduções, apenas os textos numerados para cada slide.
+      Não inclua títulos, hashtags ou introduções, apenas os textos numerados para cada slide.
     `;
 
-    // Adicionando logs para debug
-    console.log("Enviando requisição para OpenAI com:", {
-      model: "gpt-3.5-turbo", // Modelo mais estável
-      apiKey: apiKey ? "Presente (primeiros 4 caracteres): " + apiKey.substring(0, 4) + "..." : "Ausente",
-      prompt: prompt.substring(0, 100) + "..."
-    });
+    console.log("Enviando requisição para OpenAI com prompt refinado");
 
     const response = await fetch(API_URL, {
       method: "POST",
@@ -52,8 +54,12 @@ export async function generateCarouselContent({
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo", // Mantendo o modelo mais estável
+        model: "gpt-3.5-turbo",
         messages: [
+          {
+            role: "system",
+            content: "Você é um especialista em marketing digital e copywriting para redes sociais. Crie conteúdo direto, conciso e altamente relevante para a audiência-alvo."
+          },
           {
             role: "user",
             content: prompt,
@@ -92,7 +98,7 @@ export async function generateCarouselContent({
     }
 
     const data = await response.json();
-    console.log("Resposta da OpenAI:", data);
+    console.log("Resposta da OpenAI recebida");
     
     const content = data.choices?.[0]?.message?.content;
 
