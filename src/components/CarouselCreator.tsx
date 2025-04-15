@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -5,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/components/ui/sonner"; // Updated to use sonner toast
+import { toast } from "sonner";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 import { searchImages, UnsplashImage } from "@/services/unsplashService";
 import { generateCarouselContent } from "@/services/openaiService";
@@ -569,7 +570,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   }
   
   return (
-    
     <div className="w-full max-w-6xl mx-auto p-4 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Área do Carrossel */}
@@ -884,4 +884,20 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                         fontFamily: textBox.style.fontFamily,
                         fontSize: `calc(${textBox.style.fontSize} * 0.5)`,
                         backgroundColor: textBox.style.backgroundColor,
-                        padding
+                        padding: textBox.style.padding
+                      }}
+                    >
+                      {textBox.text}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CarouselCreator;
