@@ -1,5 +1,5 @@
 
-import React, { useRef, useCallback } from "react";
+import React, { useRef } from "react";
 import TextBox from "@/components/TextBox";
 import SlideImages from "@/components/SlideImages";
 import { Slide } from "@/components/CarouselCreatorExtension";
@@ -47,20 +47,40 @@ const SlideCanvas: React.FC<SlideCanvasProps> = ({
   
   const isDragging = draggedTextBoxId !== null || draggedImageId !== null;
   
+  // Handle click on canvas to deselect items
+  const handleCanvasClick = () => {
+    if (selectedTextBoxId !== null) {
+      selectTextBox("");
+    }
+    if (editingTextBoxId !== null) {
+      toggleEditingTextBox("");
+    }
+    if (selectedImageId !== null) {
+      handleImageSelect("");
+    }
+  };
+  
   return (
     <div 
       id="slide-canvas"
       ref={slideCanvasRef}
       className="slide-canvas carousel-container mb-4 relative"
+      style={{ 
+        aspectRatio: '1/1',
+        backgroundColor: '#f5f5f5',
+        border: '1px solid #e0e0e0',
+        overflow: 'hidden'
+      }}
       onMouseMove={isDragging ? handleMouseMove : undefined}
       onMouseUp={isDragging ? handleMouseUp : undefined}
       onMouseLeave={isDragging ? handleMouseUp : undefined}
+      onClick={handleCanvasClick}
     >
       {currentSlide?.backgroundImage && (
         <img
           src={currentSlide.backgroundImage.urls.regular}
           alt={currentSlide.backgroundImage.alt_description || "Imagem do slide"}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover absolute inset-0"
         />
       )}
       

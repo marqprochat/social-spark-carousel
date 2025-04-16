@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { X, Maximize2 } from "lucide-react";
 
@@ -39,8 +40,9 @@ const TextBox: React.FC<TextBoxProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [localText, setLocalText] = useState(text);
   const [size, setSize] = useState({ width: 'auto', height: 'auto' });
-  const [isResizing, setIsResizing] = useState(false);
   const textBoxRef = useRef<HTMLDivElement>(null);
+  const textContentRef = useRef<HTMLDivElement>(null);
+  const resizingRef = useRef<string | null>(null);
   
   useEffect(() => {
     setLocalText(text);
@@ -58,38 +60,63 @@ const TextBox: React.FC<TextBoxProps> = ({
     }
   };
 
-  const startResizing = (e: React.MouseEvent) => {
+  // Handle resize start from any side or corner
+  const startResizing = (e: React.MouseEvent, direction: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsResizing(true);
+    resizingRef.current = direction;
+    
+    // Initial size
+    if (textBoxRef.current) {
+      const rect = textBoxRef.current.getBoundingClientRect();
+      setSize({
+        width: `${rect.width}px`,
+        height: `${rect.height}px`
+      });
+    }
+    
     document.addEventListener('mousemove', handleResizeMove);
     document.addEventListener('mouseup', stopResizing);
   };
 
   const handleResizeMove = (e: MouseEvent) => {
-    if (!isResizing || !textBoxRef.current) return;
+    if (!resizingRef.current || !textBoxRef.current) return;
     
     const rect = textBoxRef.current.getBoundingClientRect();
-    const containerRect = textBoxRef.current.parentElement?.getBoundingClientRect();
+    const direction = resizingRef.current;
     
-    if (!containerRect) return;
+    // Calculate new size based on resize direction
+    let newWidth = rect.width;
+    let newHeight = rect.height;
     
-    const newWidth = e.clientX - rect.left;
-    const newHeight = e.clientY - rect.top;
+    if (direction.includes('e')) {
+      // Right edge
+      newWidth = e.clientX - rect.left;
+    } else if (direction.includes('w')) {
+      // Left edge
+      newWidth = rect.right - e.clientX;
+    }
     
+    if (direction.includes('s')) {
+      // Bottom edge
+      newHeight = e.clientY - rect.top;
+    } else if (direction.includes('n')) {
+      // Top edge
+      newHeight = rect.bottom - e.clientY;
+    }
+    
+    // Minimum size constraints
     const minWidth = 100;
     const minHeight = 50;
-    const maxWidth = containerRect.width * 0.9;
-    const maxHeight = containerRect.height * 0.9;
     
     setSize({
-      width: `${Math.max(minWidth, Math.min(newWidth, maxWidth))}px`,
-      height: `${Math.max(minHeight, Math.min(newHeight, maxHeight))}px`,
+      width: `${Math.max(minWidth, newWidth)}px`,
+      height: `${Math.max(minHeight, newHeight)}px`,
     });
   };
 
   const stopResizing = () => {
-    setIsResizing(false);
+    resizingRef.current = null;
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', stopResizing);
   };
@@ -111,11 +138,35 @@ const TextBox: React.FC<TextBoxProps> = ({
   };
 
   const fontClass = fontFamilyMap[style.fontFamily] || "font-sans";
+  
+  // Create resize handles
+  const renderResizeHandles = () => {
+    if (!isSelected) return null;
+    
+    const handles = [
+      { position: 'n', className: 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-n-resize h-2 w-2' },
+      { position: 'e', className: 'top-1/2 right-0 -translate-y-1/2 translate-x-1/2 cursor-e-resize h-2 w-2' },
+      { position: 's', className: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 cursor-s-resize h-2 w-2' },
+      { position: 'w', className: 'top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 cursor-w-resize h-2 w-2' },
+      { position: 'ne', className: 'top-0 right-0 -translate-y-1/2 translate-x-1/2 cursor-ne-resize h-2 w-2' },
+      { position: 'se', className: 'bottom-0 right-0 translate-y-1/2 translate-x-1/2 cursor-se-resize h-2 w-2' },
+      { position: 'sw', className: 'bottom-0 left-0 translate-y-1/2 -translate-x-1/2 cursor-sw-resize h-2 w-2' },
+      { position: 'nw', className: 'top-0 left-0 -translate-y-1/2 -translate-x-1/2 cursor-nw-resize h-2 w-2' },
+    ];
+    
+    return handles.map(handle => (
+      <div
+        key={handle.position}
+        className={`absolute ${handle.className} bg-primary rounded-full`}
+        onMouseDown={(e) => startResizing(e, handle.position)}
+      />
+    ));
+  };
 
   return (
     <div
       ref={textBoxRef}
-      className={`absolute contenteditable-div cursor-move ${isSelected ? "ring-2 ring-primary" : ""}`}
+      className={`absolute contenteditable-div ${isSelected ? "ring-2 ring-primary" : isHovering ? "ring-1 ring-primary/50" : ""}`}
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
@@ -125,18 +176,21 @@ const TextBox: React.FC<TextBoxProps> = ({
         backgroundColor: style.backgroundColor,
         padding: style.padding,
         zIndex: isSelected ? 10 : 1,
-        minWidth: "100px",
         width: size.width,
         height: size.height,
         userSelect: isEditing ? "text" : "none",
         transition: "box-shadow 0.2s ease",
         boxShadow: isSelected ? "0 0 0 2px rgba(147, 51, 234, 0.5)" : "none",
         overflow: "visible",
-        resize: isSelected ? "both" : "none",
+        minWidth: "100px",
+        minHeight: "50px",
+        cursor: isEditing ? "text" : "move",
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(id);
+        if (!isEditing) {
+          onSelect(id);
+        }
       }}
       onMouseDown={(e) => {
         if (!isEditing) {
@@ -144,39 +198,34 @@ const TextBox: React.FC<TextBoxProps> = ({
           onDragStart(e, id);
         }
       }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEdit(id);
+      }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
+      {/* Delete button */}
       {(isSelected || isHovering) && (
-        <>
-          <button
-            className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 z-20"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(id);
-            }}
-          >
-            <X className="h-3 w-3" />
-          </button>
-          
-          <button
-            className="absolute -bottom-3 -right-3 bg-primary text-white rounded-full p-0.5 hover:bg-primary/80 z-20"
-            onClick={startResizing}
-          >
-            <Maximize2 className="h-3 w-3" />
-          </button>
-        </>
+        <button
+          className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 z-20"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(id);
+          }}
+        >
+          <X className="h-3 w-3" />
+        </button>
       )}
+      
+      {/* Text content */}
       <div
+        ref={textContentRef}
         contentEditable={isEditing}
         suppressContentEditableWarning={true}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-          onEdit(id);
-        }}
         onBlur={handleBlur}
         onInput={handleTextChange}
-        className={`outline-none whitespace-pre-wrap break-words h-full ${fontClass}`}
+        className={`outline-none whitespace-pre-wrap break-words h-full w-full ${fontClass}`}
         style={{
           minHeight: "1em",
           overflowY: "auto",
@@ -184,6 +233,9 @@ const TextBox: React.FC<TextBoxProps> = ({
       >
         {localText}
       </div>
+      
+      {/* Resize handles */}
+      {renderResizeHandles()}
     </div>
   );
 };
