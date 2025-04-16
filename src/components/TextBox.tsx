@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, ArrowsMaximize } from "lucide-react";
 
 interface TextBoxProps {
   id: string;
@@ -39,8 +39,11 @@ const TextBox: React.FC<TextBoxProps> = ({
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [localText, setLocalText] = useState(text);
+  const [size, setSize] = useState({ width: 'auto', height: 'auto' });
+  const [isResizing, setIsResizing] = useState(false);
+  const textBoxRef = useRef<HTMLDivElement>(null);
   
-  // Atualizar texto local quando o texto da props mudar
+  // Update local text when prop text changes
   useEffect(() => {
     setLocalText(text);
   }, [text]);
@@ -53,8 +56,44 @@ const TextBox: React.FC<TextBoxProps> = ({
 
   const handleBlur = () => {
     if (isEditing) {
-      onEdit("");  // Desativa o modo de edição
+      onEdit("");  // Disable editing mode
     }
+  };
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', stopResizing);
+  };
+
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!isResizing || !textBoxRef.current) return;
+    
+    const rect = textBoxRef.current.getBoundingClientRect();
+    const containerRect = textBoxRef.current.parentElement?.getBoundingClientRect();
+    
+    if (!containerRect) return;
+    
+    const newWidth = e.clientX - rect.left;
+    const newHeight = e.clientY - rect.top;
+    
+    const minWidth = 100;
+    const minHeight = 50;
+    const maxWidth = containerRect.width * 0.9;
+    const maxHeight = containerRect.height * 0.9;
+    
+    setSize({
+      width: `${Math.max(minWidth, Math.min(newWidth, maxWidth))}px`,
+      height: `${Math.max(minHeight, Math.min(newHeight, maxHeight))}px`,
+    });
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', stopResizing);
   };
 
   // Map font family to Tailwind class
@@ -78,6 +117,7 @@ const TextBox: React.FC<TextBoxProps> = ({
 
   return (
     <div
+      ref={textBoxRef}
       className={`absolute contenteditable-div cursor-move ${isSelected ? "ring-2 ring-primary" : ""}`}
       style={{
         left: `${position.x}%`,
@@ -89,8 +129,13 @@ const TextBox: React.FC<TextBoxProps> = ({
         padding: style.padding,
         zIndex: isSelected ? 10 : 1,
         minWidth: "100px",
-        maxWidth: "80%",
+        width: size.width,
+        height: size.height,
         userSelect: isEditing ? "text" : "none",
+        transition: "box-shadow 0.2s ease",
+        boxShadow: isSelected ? "0 0 0 2px rgba(147, 51, 234, 0.5)" : "none",
+        overflow: "visible",
+        resize: isSelected ? "both" : "none",
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -106,15 +151,24 @@ const TextBox: React.FC<TextBoxProps> = ({
       onMouseLeave={() => setIsHovering(false)}
     >
       {(isSelected || isHovering) && (
-        <button
-          className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 z-20"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(id);
-          }}
-        >
-          <X className="h-3 w-3" />
-        </button>
+        <>
+          <button
+            className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-700 z-20"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(id);
+            }}
+          >
+            <X className="h-3 w-3" />
+          </button>
+          
+          <button
+            className="absolute -bottom-3 -right-3 bg-primary text-white rounded-full p-0.5 hover:bg-primary/80 z-20"
+            onClick={startResizing}
+          >
+            <ArrowsMaximize className="h-3 w-3" />
+          </button>
+        </>
       )}
       <div
         contentEditable={isEditing}
@@ -125,7 +179,11 @@ const TextBox: React.FC<TextBoxProps> = ({
         }}
         onBlur={handleBlur}
         onInput={handleTextChange}
-        className={`outline-none whitespace-pre-wrap break-words text-center ${fontClass}`}
+        className={`outline-none whitespace-pre-wrap break-words h-full ${fontClass}`}
+        style={{
+          minHeight: "1em",
+          overflowY: "auto",
+        }}
       >
         {localText}
       </div>
