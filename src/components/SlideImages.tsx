@@ -43,12 +43,16 @@ export const SlideImage: React.FC<SlideImageProps> = ({
         transform: "translate(-50%, -50%)",
         opacity,
         zIndex,
+        userSelect: "none",
       }}
       onClick={(e) => {
         e.stopPropagation();
         onSelect();
       }}
-      onMouseDown={(e) => onDragStart(e)}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        onDragStart(e);
+      }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
@@ -56,6 +60,7 @@ export const SlideImage: React.FC<SlideImageProps> = ({
         src={image.urls.regular}
         alt={image.alt_description || "Imagem do slide"}
         className={`w-full h-full object-cover filter-${filter}`}
+        draggable={false}
       />
       
       {(isSelected || isHovering) && (
@@ -114,9 +119,12 @@ const SlideImages: React.FC<SlideImagesProps> = ({
 }) => {
   if (!images.length) return null;
 
+  // Ordenar imagens pelo zIndex para garantir que as de maior zIndex sejam renderizadas por último
+  const sortedImages = [...images].sort((a, b) => (a.zIndex || 1) - (b.zIndex || 1));
+
   return (
     <>
-      {images.map((slideImage) => (
+      {sortedImages.map((slideImage) => (
         <SlideImage
           key={slideImage.id}
           image={slideImage.image}

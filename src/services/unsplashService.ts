@@ -29,6 +29,26 @@ interface SearchImagesProps {
   searchQuery?: string;
 }
 
+// Mapeamento de segmentos para termos de busca mais relevantes
+const industrySearchTerms: Record<string, string[]> = {
+  "Moda e Vestuário": ["fashion", "clothing", "apparel", "moda", "roupas", "fashion store"],
+  "Alimentos e Bebidas": ["food", "drinks", "restaurant", "café", "alimentos", "gastronomia"],
+  "Beleza e Cosmética": ["beauty", "cosmetics", "makeup", "spa", "beleza", "skincare"],
+  "Saúde e Bem-estar": ["health", "wellness", "fitness", "healthy", "bem-estar", "lifestyle"],
+  "Fitness e Esportes": ["sports", "fitness", "gym", "workout", "training", "atletas"],
+  "Tecnologia": ["technology", "tech", "gadgets", "electronics", "digital", "innovation"],
+  "Imóveis": ["real estate", "property", "home", "house", "apartment", "imobiliária"],
+  "Finanças": ["finance", "banking", "investment", "money", "business", "financial"],
+  "Educação": ["education", "school", "learning", "study", "books", "classroom"],
+  "Viagem e Turismo": ["travel", "tourism", "vacation", "trip", "journey", "destination"],
+  "Hotelaria e Restaurantes": ["hotel", "restaurant", "hospitality", "dining", "food service"],
+  "Arte e Cultura": ["art", "culture", "museum", "gallery", "exhibition", "creative"],
+  "Entretenimento": ["entertainment", "events", "shows", "concert", "festival", "performance"],
+  "Casa e Decoração": ["home decor", "interior design", "furniture", "decoration", "casa"],
+  "Serviços Profissionais": ["professional services", "business", "consulting", "office"],
+  "Automotivo": ["automotive", "car", "vehicle", "auto shop", "mechanic", "cars", "auto parts", "carros"]
+};
+
 export async function searchImages({
   businessInfo,
   accessKey = DEFAULT_ACCESS_KEY,
@@ -48,7 +68,13 @@ export async function searchImages({
     
     // Adicionar termos específicos com base no segmento do negócio
     if (businessInfo.industry) {
-      searchTerms.push(businessInfo.industry);
+      const industryTerms = industrySearchTerms[businessInfo.industry] || [businessInfo.industry];
+      searchTerms = [...searchTerms, ...industryTerms];
+
+      // Se for automotivo, garantir termos específicos
+      if (businessInfo.industry === "Automotivo") {
+        searchTerms.push("carros", "automóveis", "oficina mecânica", "auto peças");
+      }
     }
     
     // Adicionar nome do negócio se não for muito genérico
@@ -58,7 +84,13 @@ export async function searchImages({
     
     // Adicionar público-alvo para imagens mais relevantes
     if (businessInfo.targetAudience) {
-      searchTerms.push(businessInfo.targetAudience);
+      const audienceKeywords = businessInfo.targetAudience
+        .split(' ')
+        .filter(word => word.length > 4 && !['anos', 'idade', 'entre', 'para'].includes(word.toLowerCase()));
+      
+      if (audienceKeywords.length > 0) {
+        searchTerms = [...searchTerms, ...audienceKeywords.slice(0, 2)];
+      }
     }
     
     // Se houver um objetivo específico, incluí-lo na busca
@@ -69,6 +101,15 @@ export async function searchImages({
         .filter(word => word.length > 4)
         .slice(0, 2);
       searchTerms = [...searchTerms, ...objectiveKeywords];
+    }
+    
+    // Adicionar informações adicionais se disponíveis
+    if (businessInfo.additionalInfo && businessInfo.additionalInfo.length > 10) {
+      const additionalKeywords = businessInfo.additionalInfo
+        .split(' ')
+        .filter(word => word.length > 5)
+        .slice(0, 3);
+      searchTerms = [...searchTerms, ...additionalKeywords];
     }
     
     // Usar o termo de busca customizado se fornecido, ou construir um com os termos mais relevantes
@@ -102,16 +143,23 @@ export async function searchImages({
       // Tentar novamente com uma busca mais genérica se não houver resultados
       if (!customQuery) {
         console.log("Nenhum resultado encontrado. Tentando busca mais genérica...");
-        // Usar apenas a indústria e o objetivo como termos de busca
-        const genericSearchTerm = businessInfo.industry || 
-          (businessInfo.postObjective ? businessInfo.postObjective.split(' ').slice(0, 2).join(' ') : 'marketing');
-        
-        return searchImages({
-          businessInfo,
-          accessKey,
-          perPage,
-          searchQuery: genericSearchTerm
-        });
+        // Para setores específicos, usar termos de busca mais genéricos
+        if (businessInfo.industry === "Automotivo") {
+          return searchImages({
+            businessInfo,
+            accessKey,
+            perPage,
+            searchQuery: "cars automotive vehicles"
+          });
+        } else {
+          // Usar apenas a indústria como termo de busca
+          return searchImages({
+            businessInfo,
+            accessKey,
+            perPage,
+            searchQuery: businessInfo.industry
+          });
+        }
       }
       throw new Error("Nenhuma imagem encontrada para a busca");
     }

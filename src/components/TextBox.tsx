@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
 interface TextBoxProps {
@@ -38,9 +38,23 @@ const TextBox: React.FC<TextBoxProps> = ({
   onDragStart,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
+  const [localText, setLocalText] = useState(text);
+  
+  // Atualizar texto local quando o texto da props mudar
+  useEffect(() => {
+    setLocalText(text);
+  }, [text]);
 
   const handleTextChange = (e: React.FormEvent<HTMLDivElement>) => {
-    onTextChange(id, e.currentTarget.innerText);
+    const newText = e.currentTarget.innerText;
+    setLocalText(newText);
+    onTextChange(id, newText);
+  };
+
+  const handleBlur = () => {
+    if (isEditing) {
+      onEdit("");  // Desativa o modo de edição
+    }
   };
 
   // Map font family to Tailwind class
@@ -53,7 +67,11 @@ const TextBox: React.FC<TextBoxProps> = ({
     lato: "font-lato",
     raleway: "font-raleway",
     oswald: "font-oswald",
-    merriweather: "font-merriweather"
+    merriweather: "font-merriweather",
+    dancingscript: "font-dancingscript",
+    pacifico: "font-pacifico",
+    quicksand: "font-quicksand",
+    comforter: "font-comforter"
   };
 
   const fontClass = fontFamilyMap[style.fontFamily] || "font-sans";
@@ -72,11 +90,17 @@ const TextBox: React.FC<TextBoxProps> = ({
         zIndex: isSelected ? 10 : 1,
         minWidth: "100px",
         maxWidth: "80%",
+        userSelect: isEditing ? "text" : "none",
       }}
-      onClick={() => onSelect(id)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(id);
+      }}
       onMouseDown={(e) => {
-        e.preventDefault(); // Prevent text selection during drag
-        onDragStart(e, id);
+        if (!isEditing) {
+          e.preventDefault(); // Prevent text selection during drag
+          onDragStart(e, id);
+        }
       }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -94,13 +118,16 @@ const TextBox: React.FC<TextBoxProps> = ({
       )}
       <div
         contentEditable={isEditing}
-        suppressContentEditableWarning
-        onDoubleClick={() => onEdit(id)}
-        onBlur={() => isEditing && onEdit("")}
+        suppressContentEditableWarning={true}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          onEdit(id);
+        }}
+        onBlur={handleBlur}
         onInput={handleTextChange}
         className={`outline-none whitespace-pre-wrap break-words text-center ${fontClass}`}
       >
-        {text}
+        {localText}
       </div>
     </div>
   );
