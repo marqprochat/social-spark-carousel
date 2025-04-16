@@ -5,6 +5,8 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { ImageOff } from "lucide-react";
 
 interface ImageEditorProps {
   currentSlideImage: UnsplashImage | null;
@@ -15,6 +17,11 @@ interface ImageEditorProps {
   onOpacityChange: (opacity: number) => void;
   imageOpacity: number;
   isLoading: boolean;
+  backgroundColor?: string;
+  onBackgroundColorChange?: (color: string) => void;
+  backgroundImageOpacity?: number;
+  onBackgroundImageOpacityChange?: (opacity: number) => void;
+  onRemoveBackgroundImage?: () => void;
 }
 
 const ImageEditor: React.FC<ImageEditorProps> = ({
@@ -26,6 +33,11 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   onOpacityChange,
   imageOpacity,
   isLoading,
+  backgroundColor,
+  onBackgroundColorChange,
+  backgroundImageOpacity = 1,
+  onBackgroundImageOpacityChange,
+  onRemoveBackgroundImage
 }) => {
   const filters = [
     { value: "none", label: "Normal" },
@@ -54,7 +66,53 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Background settings section */}
+      {(onBackgroundColorChange || onBackgroundImageOpacityChange || onRemoveBackgroundImage) && (
+        <div className="space-y-4 pt-2 border-t border-gray-200">
+          <h3 className="font-medium">Configurações de Plano de Fundo</h3>
+          
+          {onBackgroundColorChange && (
+            <div>
+              <Label>Cor de Fundo</Label>
+              <Input 
+                type="color" 
+                value={backgroundColor || "#f5f5f5"}
+                onChange={(e) => onBackgroundColorChange(e.target.value)}
+                className="h-10 cursor-pointer"
+              />
+            </div>
+          )}
+          
+          {onBackgroundImageOpacityChange && currentSlideImage && (
+            <div>
+              <Label>Opacidade da Imagem de Fundo ({Math.round(backgroundImageOpacity * 100)}%)</Label>
+              <Slider
+                value={[backgroundImageOpacity * 100]}
+                min={0}
+                max={100}
+                step={5}
+                className="mt-2"
+                onValueChange={(value) => onBackgroundImageOpacityChange(value[0] / 100)}
+                disabled={isLoading || !currentSlideImage}
+              />
+            </div>
+          )}
+          
+          {onRemoveBackgroundImage && currentSlideImage && (
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={onRemoveBackgroundImage}
+              className="w-full flex items-center gap-2"
+            >
+              <ImageOff className="w-4 h-4" />
+              Remover Imagem de Fundo
+            </Button>
+          )}
+        </div>
+      )}
+      
       <div>
         <Label>Filtro de Imagem</Label>
         <Select value={imageFilter} onValueChange={onFilterChange} disabled={isLoading || !currentSlideImage}>

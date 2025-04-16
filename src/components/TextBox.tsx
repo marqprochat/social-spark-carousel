@@ -121,23 +121,25 @@ const TextBox: React.FC<TextBoxProps> = ({
     document.removeEventListener('mouseup', stopResizing);
   };
 
-  const fontFamilyMap: Record<string, string> = {
-    montserrat: "font-montserrat",
-    roboto: "font-roboto",
-    poppins: "font-poppins",
-    playfair: "font-playfair",
-    opensans: "font-opensans",
-    lato: "font-lato",
-    raleway: "font-raleway",
-    oswald: "font-oswald",
-    merriweather: "font-merriweather",
-    dancingscript: "font-dancingscript",
-    pacifico: "font-pacifico",
-    quicksand: "font-quicksand",
-    comforter: "font-comforter"
+  // Create font class mapping
+  const getFontClass = () => {
+    switch(style.fontFamily) {
+      case "montserrat": return "font-montserrat";
+      case "roboto": return "font-roboto";
+      case "poppins": return "font-poppins";
+      case "playfair": return "font-playfair";
+      case "opensans": return "font-opensans";
+      case "lato": return "font-lato";
+      case "raleway": return "font-raleway";
+      case "oswald": return "font-oswald";
+      case "merriweather": return "font-merriweather";
+      case "dancingscript": return "font-dancingscript";
+      case "pacifico": return "font-pacifico";
+      case "quicksand": return "font-quicksand";
+      case "comforter": return "font-comforter";
+      default: return "font-sans";
+    }
   };
-
-  const fontClass = fontFamilyMap[style.fontFamily] || "font-sans";
   
   // Create resize handles
   const renderResizeHandles = () => {
@@ -162,6 +164,9 @@ const TextBox: React.FC<TextBoxProps> = ({
       />
     ));
   };
+
+  // Get the appropriate font class
+  const fontClass = getFontClass();
 
   return (
     <div
@@ -229,6 +234,7 @@ const TextBox: React.FC<TextBoxProps> = ({
         style={{
           minHeight: "1em",
           overflowY: "auto",
+          fontFamily: style.fontFamily === "sans" ? "sans-serif" : undefined,
         }}
       >
         {localText}

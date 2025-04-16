@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { UnsplashImage } from "@/services/unsplashService";
 import { X, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface SlideImageProps {
   onDelete: () => void;
   onDragStart: (e: React.MouseEvent) => void;
   onPositionChange: (position: { x: number; y: number }) => void;
+  onSizeChange?: (size: { width: number; height: number }) => void;
   zIndex: number;
 }
 
@@ -28,12 +29,97 @@ export const SlideImage: React.FC<SlideImageProps> = ({
   onSelect,
   onDelete,
   onDragStart,
+  onSizeChange,
   zIndex,
 }) => {
-  const [isHovering, setIsHovering] = React.useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const imageRef = useRef<HTMLDivElement>(null);
+  const resizingRef = useRef<string | null>(null);
+  
+  // Handle resize functionality
+  const startResizing = (e: React.MouseEvent, direction: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizingRef.current = direction;
+    
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', stopResizing);
+  };
+
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!resizingRef.current || !imageRef.current || !onSizeChange) return;
+    
+    const slideCanvas = document.getElementById('slide-canvas');
+    if (!slideCanvas) return;
+    
+    const canvasRect = slideCanvas.getBoundingClientRect();
+    const imageRect = imageRef.current.getBoundingClientRect();
+    const direction = resizingRef.current;
+    
+    // Calculate size changes based on canvas dimensions
+    const canvasWidth = canvasRect.width;
+    const canvasHeight = canvasRect.height;
+    
+    let newWidth = size.width;
+    let newHeight = size.height;
+    
+    // Calculate resize based on direction
+    if (direction.includes('e')) {
+      // Right edge
+      const widthChange = ((e.clientX - imageRect.right) / canvasWidth) * 100;
+      newWidth = Math.max(10, size.width + widthChange);
+    } else if (direction.includes('w')) {
+      // Left edge
+      const widthChange = ((imageRect.left - e.clientX) / canvasWidth) * 100;
+      newWidth = Math.max(10, size.width + widthChange);
+    }
+    
+    if (direction.includes('s')) {
+      // Bottom edge
+      const heightChange = ((e.clientY - imageRect.bottom) / canvasHeight) * 100;
+      newHeight = Math.max(10, size.height + heightChange);
+    } else if (direction.includes('n')) {
+      // Top edge
+      const heightChange = ((imageRect.top - e.clientY) / canvasHeight) * 100;
+      newHeight = Math.max(10, size.height + heightChange);
+    }
+    
+    onSizeChange({ width: newWidth, height: newHeight });
+  };
+
+  const stopResizing = () => {
+    resizingRef.current = null;
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', stopResizing);
+  };
+  
+  // Create resize handles
+  const renderResizeHandles = () => {
+    if (!isSelected) return null;
+    
+    const handles = [
+      { position: 'n', className: 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-n-resize h-2 w-2' },
+      { position: 'e', className: 'top-1/2 right-0 -translate-y-1/2 translate-x-1/2 cursor-e-resize h-2 w-2' },
+      { position: 's', className: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 cursor-s-resize h-2 w-2' },
+      { position: 'w', className: 'top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 cursor-w-resize h-2 w-2' },
+      { position: 'ne', className: 'top-0 right-0 -translate-y-1/2 translate-x-1/2 cursor-ne-resize h-2 w-2' },
+      { position: 'se', className: 'bottom-0 right-0 translate-y-1/2 translate-x-1/2 cursor-se-resize h-2 w-2' },
+      { position: 'sw', className: 'bottom-0 left-0 translate-y-1/2 -translate-x-1/2 cursor-sw-resize h-2 w-2' },
+      { position: 'nw', className: 'top-0 left-0 -translate-y-1/2 -translate-x-1/2 cursor-nw-resize h-2 w-2' },
+    ];
+    
+    return handles.map(handle => (
+      <div
+        key={handle.position}
+        className={`absolute ${handle.className} bg-primary rounded-full`}
+        onMouseDown={(e) => startResizing(e, handle.position)}
+      />
+    ));
+  };
 
   return (
     <div
+      ref={imageRef}
       className={`absolute cursor-move ${isSelected ? "ring-2 ring-primary" : ""}`}
       style={{
         left: `${position.x}%`,
@@ -86,6 +172,9 @@ export const SlideImage: React.FC<SlideImageProps> = ({
           </Button>
         </div>
       )}
+      
+      {/* Resize handles */}
+      {renderResizeHandles()}
     </div>
   );
 };
@@ -107,6 +196,7 @@ interface SlideImagesProps {
   selectedId: string | null;
   onDragStart: (e: React.MouseEvent, id: string) => void;
   onPositionChange: (id: string, position: { x: number; y: number }) => void;
+  onSizeChange?: (id: string, size: { width: number; height: number }) => void;
 }
 
 const SlideImages: React.FC<SlideImagesProps> = ({
@@ -116,10 +206,11 @@ const SlideImages: React.FC<SlideImagesProps> = ({
   selectedId,
   onDragStart,
   onPositionChange,
+  onSizeChange,
 }) => {
   if (!images.length) return null;
 
-  // Ordenar imagens pelo zIndex para garantir que as de maior zIndex sejam renderizadas por último
+  // Sort images by zIndex to ensure the ones with higher zIndex are rendered last
   const sortedImages = [...images].sort((a, b) => (a.zIndex || 1) - (b.zIndex || 1));
 
   return (
@@ -137,6 +228,7 @@ const SlideImages: React.FC<SlideImagesProps> = ({
           onDelete={() => onDelete(slideImage.id)}
           onDragStart={(e) => onDragStart(e, slideImage.id)}
           onPositionChange={(position) => onPositionChange(slideImage.id, position)}
+          onSizeChange={onSizeChange ? (size) => onSizeChange(slideImage.id, size) : undefined}
           zIndex={slideImage.zIndex}
         />
       ))}

@@ -22,6 +22,7 @@ interface SlideCanvasProps {
   handleMouseMove: (e: React.MouseEvent) => void;
   handleMouseUp: () => void;
   updateTextBoxPosition: (id: string, position: { x: number; y: number }) => void;
+  handleImageSizeChange?: (id: string, size: { width: number; height: number }) => void;
 }
 
 const SlideCanvas: React.FC<SlideCanvasProps> = ({
@@ -41,7 +42,8 @@ const SlideCanvas: React.FC<SlideCanvasProps> = ({
   handleDeleteImage,
   handleMouseMove,
   handleMouseUp,
-  updateTextBoxPosition
+  updateTextBoxPosition,
+  handleImageSizeChange
 }) => {
   const slideCanvasRef = useRef<HTMLDivElement>(null);
   
@@ -67,7 +69,7 @@ const SlideCanvas: React.FC<SlideCanvasProps> = ({
       className="slide-canvas carousel-container mb-4 relative"
       style={{ 
         aspectRatio: '1/1',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: currentSlide?.backgroundColor || '#f5f5f5',
         border: '1px solid #e0e0e0',
         overflow: 'hidden'
       }}
@@ -81,6 +83,9 @@ const SlideCanvas: React.FC<SlideCanvasProps> = ({
           src={currentSlide.backgroundImage.urls.regular}
           alt={currentSlide.backgroundImage.alt_description || "Imagem do slide"}
           className="w-full h-full object-cover absolute inset-0"
+          style={{ 
+            opacity: currentSlide.backgroundImageOpacity ?? 1 
+          }}
         />
       )}
       
@@ -93,6 +98,7 @@ const SlideCanvas: React.FC<SlideCanvasProps> = ({
         onPositionChange={(id, position) => {
           // This is handled by the parent component through draggedImageId
         }}
+        onSizeChange={handleImageSizeChange}
       />}
       
       {currentSlide?.textBoxes.map((textBox) => (

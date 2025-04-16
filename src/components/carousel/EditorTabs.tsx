@@ -8,6 +8,7 @@ import ImageSearchPanel from "./ImageSearchPanel";
 import { Slide } from "@/components/CarouselCreatorExtension";
 import { UnsplashImage } from "@/services/unsplashService";
 import { SlideImageData } from "@/components/SlideImages";
+import ImageEditor from "@/components/ImageEditor";
 
 interface EditorTabsProps {
   currentSlide: Slide;
@@ -35,6 +36,11 @@ interface EditorTabsProps {
   handleAddImage: (imageData: SlideImageData) => void;
   handleArrangeImage: (id: string, direction: 'forward' | 'backward') => void;
   handleSearchImages: () => void;
+  slideBackgroundColor?: string;
+  updateBackgroundColor?: (color: string) => void;
+  backgroundImageOpacity?: number;
+  updateBackgroundImageOpacity?: (opacity: number) => void;
+  removeBackgroundImage?: () => void;
 }
 
 const EditorTabs: React.FC<EditorTabsProps> = ({
@@ -62,16 +68,24 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
   handleImageOpacityChange,
   handleAddImage,
   handleArrangeImage,
-  handleSearchImages
+  handleSearchImages,
+  slideBackgroundColor,
+  updateBackgroundColor,
+  backgroundImageOpacity,
+  updateBackgroundImageOpacity,
+  removeBackgroundImage
 }) => {
   return (
     <Tabs defaultValue="text" className="w-full">
       <TabsList className="w-full">
-        <TabsTrigger value="text" className="w-1/2">
+        <TabsTrigger value="text" className="w-1/3">
           <Type className="h-4 w-4 mr-2" /> Texto
         </TabsTrigger>
-        <TabsTrigger value="image" className="w-1/2">
+        <TabsTrigger value="image" className="w-1/3">
           <Image className="h-4 w-4 mr-2" /> Imagem
+        </TabsTrigger>
+        <TabsTrigger value="background" className="w-1/3">
+          Plano de Fundo
         </TabsTrigger>
       </TabsList>
       
@@ -114,6 +128,24 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
           setSearchTerm={setSearchTerm}
           handleSearchImages={handleSearchImages}
           isLoading={isLoading}
+        />
+      </TabsContent>
+      
+      <TabsContent value="background" className="space-y-4">
+        <ImageEditor
+          currentSlideImage={currentSlide?.backgroundImage || null}
+          imageFilter="none"
+          imageSize={{ width: 100, height: 100 }}
+          onFilterChange={() => {}}
+          onSizeChange={() => {}}
+          onOpacityChange={() => {}}
+          imageOpacity={1}
+          isLoading={isLoading}
+          backgroundColor={slideBackgroundColor}
+          onBackgroundColorChange={updateBackgroundColor}
+          backgroundImageOpacity={backgroundImageOpacity}
+          onBackgroundImageOpacityChange={updateBackgroundImageOpacity}
+          onRemoveBackgroundImage={removeBackgroundImage}
         />
       </TabsContent>
     </Tabs>

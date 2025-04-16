@@ -14,7 +14,11 @@ const FONT_OPTIONS = [
   { value: "lato", label: "Lato" },
   { value: "raleway", label: "Raleway" },
   { value: "oswald", label: "Oswald" },
-  { value: "merriweather", label: "Merriweather" }
+  { value: "merriweather", label: "Merriweather" },
+  { value: "dancingscript", label: "Dancing Script" },
+  { value: "pacifico", label: "Pacifico" },
+  { value: "quicksand", label: "Quicksand" },
+  { value: "comforter", label: "Comforter" }
 ];
 
 const FONT_SIZE_OPTIONS = [

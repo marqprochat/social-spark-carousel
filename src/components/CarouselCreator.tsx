@@ -45,6 +45,8 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     draggedTextBoxId,
     draggedImageId,
     currentSlide,
+    slideBackgroundColor,
+    backgroundImageOpacity,
     handleSearchImages,
     handleRegenerateTexts,
     handleAddImage,
@@ -68,7 +70,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     handleImageSelect,
     updateTextBoxPosition,
     exportSlide,
-    exportAllSlides
+    exportAllSlides,
+    updateBackgroundColor,
+    updateBackgroundImageOpacity,
+    removeBackgroundImage,
+    handleImageResize
   } = useCarouselState({ businessInfo, openAiKey, unsplashKey });
   
   if (isLoading && slides.length === 0) {
@@ -100,6 +106,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
               handleMouseMove={handleMouseMove}
               handleMouseUp={handleMouseUp}
               updateTextBoxPosition={updateTextBoxPosition}
+              handleImageSizeChange={handleImageResize}
             />
           )}
           
@@ -138,6 +145,11 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                 handleAddImage={handleAddImage}
                 handleArrangeImage={handleArrangeImage}
                 handleSearchImages={handleSearchImages}
+                slideBackgroundColor={slideBackgroundColor}
+                updateBackgroundColor={updateBackgroundColor}
+                backgroundImageOpacity={backgroundImageOpacity}
+                updateBackgroundImageOpacity={updateBackgroundImageOpacity}
+                removeBackgroundImage={removeBackgroundImage}
               />
             )}
           </div>

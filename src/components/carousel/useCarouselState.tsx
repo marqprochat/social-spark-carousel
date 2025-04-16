@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -47,6 +46,9 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
   
   const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
   
+  const [slideBackgroundColor, setSlideBackgroundColor] = useState("#f5f5f5");
+  const [backgroundImageOpacity, setBackgroundImageOpacity] = useState(1);
+  
   useEffect(() => {
     const initializeCarousel = async () => {
       try {
@@ -64,6 +66,12 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
         setImages(fetchedImages);
         
         const newSlides = initializeSlides(generatedTexts, fetchedImages);
+        
+        newSlides.forEach(slide => {
+          slide.backgroundColor = "#f5f5f5";
+          slide.backgroundImageOpacity = 1;
+        });
+        
         setSlides(newSlides);
       } catch (error) {
         console.error("Erro ao inicializar carrossel:", error);
@@ -80,7 +88,7 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
   }, [businessInfo, openAiKey, unsplashKey]);
   
   useEffect(() => {
-    if (slides.length > 0 && selectedTextBoxId) {
+    if (selectedTextBoxId) {
       const currentSlide = slides[currentSlideIndex];
       const selectedTextBox = currentSlide.textBoxes.find(box => box.id === selectedTextBoxId);
       
@@ -101,7 +109,7 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
   }, [selectedTextBoxId, currentSlideIndex, slides]);
 
   useEffect(() => {
-    if (slides.length > 0 && selectedImageId) {
+    if (selectedImageId) {
       const currentSlide = slides[currentSlideIndex];
       const selectedImage = currentSlide.images.find(img => img.id === selectedImageId);
       
@@ -512,6 +520,44 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
 
   const currentSlide = slides[currentSlideIndex];
 
+  useEffect(() => {
+    if (currentSlide) {
+      setSlideBackgroundColor(currentSlide.backgroundColor || "#f5f5f5");
+      setBackgroundImageOpacity(currentSlide.backgroundImageOpacity ?? 1);
+    }
+  }, [currentSlideIndex, currentSlide]);
+
+  const updateBackgroundColor = (color: string) => {
+    const updatedSlides = [...slides];
+    updatedSlides[currentSlideIndex].backgroundColor = color;
+    setSlideBackgroundColor(color);
+    setSlides(updatedSlides);
+  };
+  
+  const updateBackgroundImageOpacity = (opacity: number) => {
+    const updatedSlides = [...slides];
+    updatedSlides[currentSlideIndex].backgroundImageOpacity = opacity;
+    setBackgroundImageOpacity(opacity);
+    setSlides(updatedSlides);
+  };
+  
+  const removeBackgroundImage = () => {
+    const updatedSlides = [...slides];
+    updatedSlides[currentSlideIndex].backgroundImage = null;
+    setSlides(updatedSlides);
+  };
+  
+  const handleImageResize = (imageId: string, size: { width: number; height: number }) => {
+    const updatedSlides = [...slides];
+    const currentSlide = updatedSlides[currentSlideIndex];
+    const imageIndex = currentSlide.images.findIndex(img => img.id === imageId);
+    
+    if (imageIndex !== -1) {
+      currentSlide.images[imageIndex].size = size;
+      setSlides(updatedSlides);
+    }
+  };
+
   return {
     slides,
     currentSlideIndex,
@@ -535,6 +581,8 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
     draggedTextBoxId,
     draggedImageId,
     currentSlide,
+    slideBackgroundColor,
+    backgroundImageOpacity,
     handleSearchImages,
     handleRegenerateTexts,
     updateSlideImage,
@@ -560,6 +608,10 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
     handleImageSelect,
     updateTextBoxPosition,
     exportSlide,
-    exportAllSlides
+    exportAllSlides,
+    updateBackgroundColor,
+    updateBackgroundImageOpacity,
+    removeBackgroundImage,
+    handleImageResize
   };
 };
