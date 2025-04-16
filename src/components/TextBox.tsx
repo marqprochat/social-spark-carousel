@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from "react";
-import { X, ArrowsMaximize } from "lucide-react";
+import { X, Maximize2 } from "lucide-react";
 
 interface TextBoxProps {
   id: string;
@@ -43,7 +42,6 @@ const TextBox: React.FC<TextBoxProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const textBoxRef = useRef<HTMLDivElement>(null);
   
-  // Update local text when prop text changes
   useEffect(() => {
     setLocalText(text);
   }, [text]);
@@ -96,7 +94,6 @@ const TextBox: React.FC<TextBoxProps> = ({
     document.removeEventListener('mouseup', stopResizing);
   };
 
-  // Map font family to Tailwind class
   const fontFamilyMap: Record<string, string> = {
     montserrat: "font-montserrat",
     roboto: "font-roboto",
@@ -166,7 +163,7 @@ const TextBox: React.FC<TextBoxProps> = ({
             className="absolute -bottom-3 -right-3 bg-primary text-white rounded-full p-0.5 hover:bg-primary/80 z-20"
             onClick={startResizing}
           >
-            <ArrowsMaximize className="h-3 w-3" />
+            <Maximize2 className="h-3 w-3" />
           </button>
         </>
       )}
