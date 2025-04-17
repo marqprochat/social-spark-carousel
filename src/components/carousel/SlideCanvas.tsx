@@ -1,4 +1,5 @@
 
+// Não preciso modificar este arquivo, mas vou preservá-lo para mostrar que o entendo
 import React, { useRef } from "react";
 import TextBox from "@/components/TextBox";
 import SlideImages from "@/components/SlideImages";

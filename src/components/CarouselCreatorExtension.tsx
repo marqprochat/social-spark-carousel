@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { UnsplashImage } from "@/services/unsplashService";
@@ -97,6 +96,9 @@ export interface ImageEditorTabProps {
   onArrangeImage: (id: string, direction: 'forward' | 'backward') => void;
   images: UnsplashImage[];
   isLoading: boolean;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  handleSearchImages: () => void;
 }
 
 export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
@@ -111,7 +113,10 @@ export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
   onAddImage,
   onArrangeImage,
   images,
-  isLoading
+  isLoading,
+  searchTerm,
+  setSearchTerm,
+  handleSearchImages
 }) => {
   const selectedImage = selectedImageId ? 
     currentSlide.images.find(img => img.id === selectedImageId)?.image : null;
@@ -134,17 +139,17 @@ export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
             images={images}
             onAddImage={onAddImage}
             isLoading={isLoading}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            handleSearchImages={handleSearchImages}
           />
         </div>
       </div>
       
       <Tabs defaultValue="edit" className="w-full">
         <TabsList className="w-full">
-          <TabsTrigger value="edit" className="w-1/2">
+          <TabsTrigger value="edit" className="w-full">
             <Image className="h-4 w-4 mr-2" /> Editar Imagem
-          </TabsTrigger>
-          <TabsTrigger value="gallery" className="w-1/2">
-            <Plus className="h-4 w-4 mr-2" /> Galeria
           </TabsTrigger>
         </TabsList>
         
@@ -159,41 +164,6 @@ export const ImageEditorTab: React.FC<ImageEditorTabProps> = ({
             imageOpacity={imageOpacity}
             isLoading={isLoading}
           />
-        </TabsContent>
-        
-        <TabsContent value="gallery">
-          <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto p-1">
-              {images.map((image) => (
-                <div
-                  key={image.id}
-                  className="cursor-pointer rounded overflow-hidden h-[60px]"
-                  onClick={() => {
-                    onAddImage({
-                      id: uuidv4(),
-                      image,
-                      position: { x: 50, y: 50 },
-                      size: { width: 50, height: 50 },
-                      opacity: 1,
-                      filter: "none",
-                      zIndex: 2
-                    });
-                  }}
-                >
-                  <img
-                    src={image.urls.small}
-                    alt={image.alt_description || "Imagem do Unsplash"}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-              {isLoading && (
-                <div className="col-span-3 flex justify-center py-4">
-                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-                </div>
-              )}
-            </div>
-          </div>
         </TabsContent>
       </Tabs>
     </div>

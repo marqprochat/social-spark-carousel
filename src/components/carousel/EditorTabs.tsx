@@ -120,15 +120,11 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
             onArrangeImage={handleArrangeImage}
             images={images}
             isLoading={isLoading}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            handleSearchImages={handleSearchImages}
           />
         )}
-
-        <ImageSearchPanel 
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          handleSearchImages={handleSearchImages}
-          isLoading={isLoading}
-        />
       </TabsContent>
       
       <TabsContent value="background" className="space-y-4">
