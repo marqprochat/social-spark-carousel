@@ -29,6 +29,8 @@ export const initializeSlides = (texts: string[], images: UnsplashImage[]): Slid
     }],
     images: [],
     backgroundImage: images[index % images.length] || null,
+    backgroundColor: "#f5f5f5", // Add default background color
+    backgroundImageOpacity: 1, // Add default opacity
   }));
 };
 
@@ -215,4 +217,6 @@ export type Slide = {
   }[];
   images: SlideImageData[];
   backgroundImage: UnsplashImage | null;
+  backgroundColor: string; // Add background color property
+  backgroundImageOpacity: number; // Add background image opacity property
 };

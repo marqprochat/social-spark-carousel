@@ -67,11 +67,6 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
         
         const newSlides = initializeSlides(generatedTexts, fetchedImages);
         
-        newSlides.forEach(slide => {
-          slide.backgroundColor = "#f5f5f5";
-          slide.backgroundImageOpacity = 1;
-        });
-        
         setSlides(newSlides);
       } catch (error) {
         console.error("Erro ao inicializar carrossel:", error);
