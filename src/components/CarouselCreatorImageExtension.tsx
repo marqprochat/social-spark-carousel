@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 import { UnsplashImage } from "@/services/unsplashService";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Image, Upload, Search } from "lucide-react";
+import { Plus, Image as ImageIcon, Upload, Search } from "lucide-react";
 import { SlideImageData } from "@/components/SlideImages";
 import { v4 as uuidv4 } from "uuid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -110,7 +110,7 @@ export const AddImageDialog: React.FC<AddImageDialogProps> = ({
       };
       
       // Pré-carregar a imagem para obter dimensões
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         localImage.width = img.width;
         localImage.height = img.height;
