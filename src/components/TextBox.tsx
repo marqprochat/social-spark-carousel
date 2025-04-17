@@ -60,7 +60,7 @@ const TextBox: React.FC<TextBoxProps> = ({
     }
   };
 
-  // Handle resize start from any side or corner
+  // Handle resize start from any side or corner - ONLY via resize handles
   const startResizing = (e: React.MouseEvent, direction: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -168,6 +168,16 @@ const TextBox: React.FC<TextBoxProps> = ({
   // Get the appropriate font class
   const fontClass = getFontClass();
 
+  // Modificação principal: Separar o drag (para mover) do resize (somente pelos handles)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Só permite iniciar o drag se o clique não foi em um handle de redimensionamento
+    // Se estamos editando, não devemos iniciar drag também
+    if (!isEditing) {
+      e.preventDefault(); // Prevent text selection during drag
+      onDragStart(e, id);
+    }
+  };
+
   return (
     <div
       ref={textBoxRef}
@@ -197,12 +207,7 @@ const TextBox: React.FC<TextBoxProps> = ({
           onSelect(id);
         }
       }}
-      onMouseDown={(e) => {
-        if (!isEditing) {
-          e.preventDefault(); // Prevent text selection during drag
-          onDragStart(e, id);
-        }
-      }}
+      onMouseDown={handleMouseDown}
       onDoubleClick={(e) => {
         e.stopPropagation();
         onEdit(id);

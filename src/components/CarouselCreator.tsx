@@ -84,6 +84,18 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   return (
     <div className="w-full max-w-6xl mx-auto p-4 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-6">
+        {/* Posição da pré-visualização trocada para o lado esquerdo */}
+        <div className="w-full lg:w-1/2">
+          <h2 className="text-2xl font-semibold mb-4">Pré-visualização do Carrossel</h2>
+          
+          <SlidePreview 
+            slides={slides}
+            currentSlideIndex={currentSlideIndex}
+            setCurrentSlideIndex={setCurrentSlideIndex}
+          />
+        </div>
+        
+        {/* Posição do editor trocada para o lado direito */}
         <div className="w-full lg:w-1/2 flex flex-col">
           <h2 className="text-2xl font-semibold mb-4">Editor de Carrossel</h2>
           
@@ -158,16 +170,6 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
             onBack={onBack}
             exportSlide={exportSlide}
             exportAllSlides={exportAllSlides}
-          />
-        </div>
-        
-        <div className="w-full lg:w-1/2">
-          <h2 className="text-2xl font-semibold mb-4">Pré-visualização do Carrossel</h2>
-          
-          <SlidePreview 
-            slides={slides}
-            currentSlideIndex={currentSlideIndex}
-            setCurrentSlideIndex={setCurrentSlideIndex}
           />
         </div>
       </div>
