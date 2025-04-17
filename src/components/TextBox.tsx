@@ -42,7 +42,6 @@ const TextBox: React.FC<TextBoxProps> = ({
   const [size, setSize] = useState({ width: 'auto', height: 'auto' });
   const textBoxRef = useRef<HTMLDivElement>(null);
   const textContentRef = useRef<HTMLDivElement>(null);
-  const resizingRef = useRef<string | null>(null);
   
   useEffect(() => {
     setLocalText(text);
@@ -58,67 +57,6 @@ const TextBox: React.FC<TextBoxProps> = ({
     if (isEditing) {
       onEdit("");  // Disable editing mode
     }
-  };
-
-  // Handle resize start from any side or corner
-  const startResizing = (e: React.MouseEvent, direction: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    resizingRef.current = direction;
-    
-    // Initial size
-    if (textBoxRef.current) {
-      const rect = textBoxRef.current.getBoundingClientRect();
-      setSize({
-        width: `${rect.width}px`,
-        height: `${rect.height}px`
-      });
-    }
-    
-    document.addEventListener('mousemove', handleResizeMove);
-    document.addEventListener('mouseup', stopResizing);
-  };
-
-  const handleResizeMove = (e: MouseEvent) => {
-    if (!resizingRef.current || !textBoxRef.current) return;
-    
-    const rect = textBoxRef.current.getBoundingClientRect();
-    const direction = resizingRef.current;
-    
-    // Calculate new size based on resize direction
-    let newWidth = rect.width;
-    let newHeight = rect.height;
-    
-    if (direction.includes('e')) {
-      // Right edge
-      newWidth = e.clientX - rect.left;
-    } else if (direction.includes('w')) {
-      // Left edge
-      newWidth = rect.right - e.clientX;
-    }
-    
-    if (direction.includes('s')) {
-      // Bottom edge
-      newHeight = e.clientY - rect.top;
-    } else if (direction.includes('n')) {
-      // Top edge
-      newHeight = rect.bottom - e.clientY;
-    }
-    
-    // Minimum size constraints
-    const minWidth = 100;
-    const minHeight = 50;
-    
-    setSize({
-      width: `${Math.max(minWidth, newWidth)}px`,
-      height: `${Math.max(minHeight, newHeight)}px`,
-    });
-  };
-
-  const stopResizing = () => {
-    resizingRef.current = null;
-    document.removeEventListener('mousemove', handleResizeMove);
-    document.removeEventListener('mouseup', stopResizing);
   };
 
   // Create font class mapping
@@ -141,30 +79,6 @@ const TextBox: React.FC<TextBoxProps> = ({
     }
   };
   
-  // Create resize handles
-  const renderResizeHandles = () => {
-    if (!isSelected) return null;
-    
-    const handles = [
-      { position: 'n', className: 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-n-resize h-2 w-2' },
-      { position: 'e', className: 'top-1/2 right-0 -translate-y-1/2 translate-x-1/2 cursor-e-resize h-2 w-2' },
-      { position: 's', className: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 cursor-s-resize h-2 w-2' },
-      { position: 'w', className: 'top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 cursor-w-resize h-2 w-2' },
-      { position: 'ne', className: 'top-0 right-0 -translate-y-1/2 translate-x-1/2 cursor-ne-resize h-2 w-2' },
-      { position: 'se', className: 'bottom-0 right-0 translate-y-1/2 translate-x-1/2 cursor-se-resize h-2 w-2' },
-      { position: 'sw', className: 'bottom-0 left-0 translate-y-1/2 -translate-x-1/2 cursor-sw-resize h-2 w-2' },
-      { position: 'nw', className: 'top-0 left-0 -translate-y-1/2 -translate-x-1/2 cursor-nw-resize h-2 w-2' },
-    ];
-    
-    return handles.map(handle => (
-      <div
-        key={handle.position}
-        className={`absolute ${handle.className} bg-primary rounded-full`}
-        onMouseDown={(e) => startResizing(e, handle.position)}
-      />
-    ));
-  };
-
   // Get the appropriate font class
   const fontClass = getFontClass();
 
@@ -239,9 +153,6 @@ const TextBox: React.FC<TextBoxProps> = ({
       >
         {localText}
       </div>
-      
-      {/* Resize handles */}
-      {renderResizeHandles()}
     </div>
   );
 };
