@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Type, Image } from "lucide-react";
 import TextEditorPanel from "./TextEditorPanel";
 import { ImageEditorTab } from "@/components/CarouselCreatorExtension";
-import ImageSearchPanel from "./ImageSearchPanel";
 import { Slide } from "@/components/CarouselCreatorExtension";
 import { UnsplashImage } from "@/services/unsplashService";
 import { SlideImageData } from "@/components/SlideImages";
@@ -41,6 +40,7 @@ interface EditorTabsProps {
   backgroundImageOpacity?: number;
   updateBackgroundImageOpacity?: (opacity: number) => void;
   removeBackgroundImage?: () => void;
+  updateSlideImage?: (image: UnsplashImage) => void;
 }
 
 const EditorTabs: React.FC<EditorTabsProps> = ({
@@ -73,7 +73,8 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
   updateBackgroundColor,
   backgroundImageOpacity,
   updateBackgroundImageOpacity,
-  removeBackgroundImage
+  removeBackgroundImage,
+  updateSlideImage
 }) => {
   return (
     <Tabs defaultValue="text" className="w-full">
@@ -142,6 +143,11 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
           backgroundImageOpacity={backgroundImageOpacity}
           onBackgroundImageOpacityChange={updateBackgroundImageOpacity}
           onRemoveBackgroundImage={removeBackgroundImage}
+          onUpdateBackgroundImage={updateSlideImage}
+          images={images}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          handleSearchImages={handleSearchImages}
         />
       </TabsContent>
     </Tabs>

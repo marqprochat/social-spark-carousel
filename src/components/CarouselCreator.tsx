@@ -74,7 +74,8 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     updateBackgroundColor,
     updateBackgroundImageOpacity,
     removeBackgroundImage,
-    handleImageResize
+    handleImageResize,
+    updateSlideImage
   } = useCarouselState({ businessInfo, openAiKey, unsplashKey });
   
   if (isLoading && slides.length === 0) {
@@ -132,51 +133,56 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         </div>
         
         {/* Coluna da direita: EditorTabs no topo e CarouselEditorActions embaixo */}
-        <div className="w-full lg:w-1/2 flex flex-col">
-          <h2 className="text-2xl font-semibold mb-4">Ferramentas de Edição</h2>
-          
-          <div className="space-y-4">
-            {currentSlide && (
-              <EditorTabs 
-                currentSlide={currentSlide}
-                selectedTextBoxId={selectedTextBoxId}
-                selectedImageId={selectedImageId}
-                currentTextColor={currentTextColor}
-                currentFontSize={currentFontSize}
-                currentFontFamily={currentFontFamily}
-                currentBgColor={currentBgColor}
-                currentBgOpacity={currentBgOpacity}
-                currentPadding={currentPadding}
-                imageFilter={imageFilter}
-                imageSize={imageSize}
-                imageOpacity={imageOpacity}
-                images={images}
-                isLoading={isLoading}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                updateTextStyle={updateTextStyle}
-                addNewTextBox={addNewTextBox}
-                handleRegenerateTexts={handleRegenerateTexts}
-                handleImageFilterChange={handleImageFilterChange}
-                handleImageSizeChange={handleImageSizeChange}
-                handleImageOpacityChange={handleImageOpacityChange}
-                handleAddImage={handleAddImage}
-                handleArrangeImage={handleArrangeImage}
-                handleSearchImages={handleSearchImages}
-                slideBackgroundColor={slideBackgroundColor}
-                updateBackgroundColor={updateBackgroundColor}
-                backgroundImageOpacity={backgroundImageOpacity}
-                updateBackgroundImageOpacity={updateBackgroundImageOpacity}
-                removeBackgroundImage={removeBackgroundImage}
-              />
-            )}
+        <div className="w-full lg:w-1/2 flex flex-col gap-6">
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Ferramentas de Edição</h2>
+            
+            <div className="space-y-4">
+              {currentSlide && (
+                <EditorTabs 
+                  currentSlide={currentSlide}
+                  selectedTextBoxId={selectedTextBoxId}
+                  selectedImageId={selectedImageId}
+                  currentTextColor={currentTextColor}
+                  currentFontSize={currentFontSize}
+                  currentFontFamily={currentFontFamily}
+                  currentBgColor={currentBgColor}
+                  currentBgOpacity={currentBgOpacity}
+                  currentPadding={currentPadding}
+                  imageFilter={imageFilter}
+                  imageSize={imageSize}
+                  imageOpacity={imageOpacity}
+                  images={images}
+                  isLoading={isLoading}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  updateTextStyle={updateTextStyle}
+                  addNewTextBox={addNewTextBox}
+                  handleRegenerateTexts={handleRegenerateTexts}
+                  handleImageFilterChange={handleImageFilterChange}
+                  handleImageSizeChange={handleImageSizeChange}
+                  handleImageOpacityChange={handleImageOpacityChange}
+                  handleAddImage={handleAddImage}
+                  handleArrangeImage={handleArrangeImage}
+                  handleSearchImages={handleSearchImages}
+                  slideBackgroundColor={slideBackgroundColor}
+                  updateBackgroundColor={updateBackgroundColor}
+                  backgroundImageOpacity={backgroundImageOpacity}
+                  updateBackgroundImageOpacity={updateBackgroundImageOpacity}
+                  removeBackgroundImage={removeBackgroundImage}
+                  updateSlideImage={updateSlideImage}
+                />
+              )}
+            </div>
           </div>
           
-          <CarouselEditorActions 
-            onBack={onBack}
-            exportSlide={exportSlide}
-            exportAllSlides={exportAllSlides}
-          />
+          <div>
+            <CarouselEditorActions 
+              onBack={onBack}
+              exportSlide={exportSlide}
+              exportAllSlides={exportAllSlides}
+            />
+          </div>
         </div>
       </div>
     </div>

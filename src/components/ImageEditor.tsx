@@ -1,12 +1,14 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { UnsplashImage } from "@/services/unsplashService";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ImageOff } from "lucide-react";
+import { ImageOff, Replace, Image as ImageIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ImageGallery } from "./CarouselCreatorImageExtension";
 
 interface ImageEditorProps {
   currentSlideImage: UnsplashImage | null;
@@ -22,6 +24,11 @@ interface ImageEditorProps {
   backgroundImageOpacity?: number;
   onBackgroundImageOpacityChange?: (opacity: number) => void;
   onRemoveBackgroundImage?: () => void;
+  onUpdateBackgroundImage?: (image: UnsplashImage) => void;
+  images?: UnsplashImage[];
+  searchTerm?: string;
+  setSearchTerm?: (term: string) => void;
+  handleSearchImages?: () => void;
 }
 
 const ImageEditor: React.FC<ImageEditorProps> = ({
@@ -37,7 +44,12 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   onBackgroundColorChange,
   backgroundImageOpacity = 1,
   onBackgroundImageOpacityChange,
-  onRemoveBackgroundImage
+  onRemoveBackgroundImage,
+  onUpdateBackgroundImage,
+  images = [],
+  searchTerm = "",
+  setSearchTerm,
+  handleSearchImages
 }) => {
   const filters = [
     { value: "none", label: "Normal" },
@@ -50,6 +62,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     { value: "saturate", label: "Saturação" },
     { value: "vintage", label: "Vintage" },
   ];
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleWidthChange = (value: string) => {
     const width = parseInt(value);
@@ -65,11 +79,18 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     }
   };
 
+  const handleImageSelect = (image: UnsplashImage) => {
+    if (onUpdateBackgroundImage) {
+      onUpdateBackgroundImage(image);
+      setIsDialogOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Background settings section */}
-      {(onBackgroundColorChange || onBackgroundImageOpacityChange || onRemoveBackgroundImage) && (
-        <div className="space-y-4 pt-2 border-t border-gray-200">
+      {(onBackgroundColorChange || onBackgroundImageOpacityChange || onRemoveBackgroundImage || onUpdateBackgroundImage) && (
+        <div className="space-y-4 border-gray-200">
           <h3 className="font-medium">Configurações de Plano de Fundo</h3>
           
           {onBackgroundColorChange && (
@@ -99,20 +120,70 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
             </div>
           )}
           
-          {onRemoveBackgroundImage && currentSlideImage && (
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={onRemoveBackgroundImage}
-              className="w-full flex items-center gap-2"
-            >
-              <ImageOff className="w-4 h-4" />
-              Remover Imagem de Fundo
-            </Button>
-          )}
+          {/* Background image actions */}
+          <div className="flex gap-2">
+            {onRemoveBackgroundImage && currentSlideImage && (
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={onRemoveBackgroundImage}
+                className="flex items-center gap-2"
+              >
+                <ImageOff className="w-4 h-4" />
+                Remover
+              </Button>
+            )}
+            
+            {onUpdateBackgroundImage && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Replace className="w-4 h-4" />
+                    {currentSlideImage ? "Substituir" : "Adicionar"} Imagem de Fundo
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Selecione uma imagem de plano de fundo</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="flex space-x-2 mb-4">
+                    <Input
+                      type="text"
+                      placeholder="Buscar imagens..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm && setSearchTerm(e.target.value)}
+                    />
+                    <Button onClick={handleSearchImages} disabled={isLoading}>
+                      Buscar
+                    </Button>
+                  </div>
+                  
+                  {isLoading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : (
+                    images.length > 0 ? (
+                      <ImageGallery images={images} onImageSelect={handleImageSelect} />
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhuma imagem encontrada. Tente outra busca.
+                      </div>
+                    )
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
       )}
       
+      {/* Regular image editing options */}
       <div>
         <Label>Filtro de Imagem</Label>
         <Select value={imageFilter} onValueChange={onFilterChange} disabled={isLoading || !currentSlideImage}>
