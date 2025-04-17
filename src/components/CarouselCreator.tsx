@@ -84,50 +84,56 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   return (
     <div className="w-full max-w-6xl mx-auto p-4 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Posição da pré-visualização trocada para o lado esquerdo */}
-        <div className="w-full lg:w-1/2">
-          <h2 className="text-2xl font-semibold mb-4">Pré-visualização do Carrossel</h2>
+        {/* Coluna da esquerda: SlideCanvas no topo e SlidePreview embaixo */}
+        <div className="w-full lg:w-1/2 flex flex-col gap-6">
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Editor de Slide</h2>
+            
+            {currentSlide && (
+              <SlideCanvas
+                currentSlide={currentSlide}
+                selectedTextBoxId={selectedTextBoxId}
+                editingTextBoxId={editingTextBoxId}
+                selectedImageId={selectedImageId}
+                draggedTextBoxId={draggedTextBoxId}
+                draggedImageId={draggedImageId}
+                selectTextBox={selectTextBox}
+                toggleEditingTextBox={toggleEditingTextBox}
+                deleteTextBox={deleteTextBox}
+                updateTextContent={updateTextContent}
+                handleDragStart={handleDragStart}
+                handleImageDragStart={handleImageDragStart}
+                handleImageSelect={handleImageSelect}
+                handleDeleteImage={handleDeleteImage}
+                handleMouseMove={handleMouseMove}
+                handleMouseUp={handleMouseUp}
+                updateTextBoxPosition={updateTextBoxPosition}
+                handleImageSizeChange={handleImageResize}
+              />
+            )}
+            
+            <SlideNavigation 
+              currentSlideIndex={currentSlideIndex}
+              slidesLength={slides.length}
+              goToPrevSlide={goToPrevSlide}
+              goToNextSlide={goToNextSlide}
+            />
+          </div>
           
-          <SlidePreview 
-            slides={slides}
-            currentSlideIndex={currentSlideIndex}
-            setCurrentSlideIndex={setCurrentSlideIndex}
-          />
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Pré-visualização do Carrossel</h2>
+            
+            <SlidePreview 
+              slides={slides}
+              currentSlideIndex={currentSlideIndex}
+              setCurrentSlideIndex={setCurrentSlideIndex}
+            />
+          </div>
         </div>
         
-        {/* Posição do editor trocada para o lado direito */}
+        {/* Coluna da direita: EditorTabs no topo e CarouselEditorActions embaixo */}
         <div className="w-full lg:w-1/2 flex flex-col">
-          <h2 className="text-2xl font-semibold mb-4">Editor de Carrossel</h2>
-          
-          {currentSlide && (
-            <SlideCanvas
-              currentSlide={currentSlide}
-              selectedTextBoxId={selectedTextBoxId}
-              editingTextBoxId={editingTextBoxId}
-              selectedImageId={selectedImageId}
-              draggedTextBoxId={draggedTextBoxId}
-              draggedImageId={draggedImageId}
-              selectTextBox={selectTextBox}
-              toggleEditingTextBox={toggleEditingTextBox}
-              deleteTextBox={deleteTextBox}
-              updateTextContent={updateTextContent}
-              handleDragStart={handleDragStart}
-              handleImageDragStart={handleImageDragStart}
-              handleImageSelect={handleImageSelect}
-              handleDeleteImage={handleDeleteImage}
-              handleMouseMove={handleMouseMove}
-              handleMouseUp={handleMouseUp}
-              updateTextBoxPosition={updateTextBoxPosition}
-              handleImageSizeChange={handleImageResize}
-            />
-          )}
-          
-          <SlideNavigation 
-            currentSlideIndex={currentSlideIndex}
-            slidesLength={slides.length}
-            goToPrevSlide={goToPrevSlide}
-            goToNextSlide={goToNextSlide}
-          />
+          <h2 className="text-2xl font-semibold mb-4">Ferramentas de Edição</h2>
           
           <div className="space-y-4">
             {currentSlide && (
