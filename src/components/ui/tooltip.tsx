@@ -4,8 +4,8 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
-// Export the provider directly from Radix UI rather than redefining it
-const TooltipProvider = TooltipPrimitive.Provider
+// Re-export the provider directly
+export { Provider as TooltipProvider } from "@radix-ui/react-tooltip"
 
 const Tooltip = TooltipPrimitive.Root
 
@@ -27,4 +27,4 @@ const TooltipContent = React.forwardRef<
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export { Tooltip, TooltipTrigger, TooltipContent }
