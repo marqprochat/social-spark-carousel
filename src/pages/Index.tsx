@@ -6,6 +6,7 @@ import ApiKeyInput from "@/components/ApiKeyInput";
 import CarouselCreator from "@/components/CarouselCreator";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState<"info" | "api" | "creator">("info");
@@ -13,33 +14,63 @@ const Index = () => {
   const [openAiKey, setOpenAiKey] = useState<string>("");
   const [unsplashKey, setUnsplashKey] = useState<string>("");
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (!session) navigate("/auth");
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (!session) navigate("/auth");
-    });
-    return () => listener.subscription.unsubscribe();
+    const checkSession = async () => {
+      setLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+        
+        if (!session) {
+          navigate("/auth");
+          return;
+        }
+        
+        // Set up auth state listener
+        const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+          setUser(session?.user ?? null);
+          if (!session) navigate("/auth");
+        });
+        
+        return () => listener.subscription.unsubscribe();
+      } catch (error) {
+        console.error("Session check error:", error);
+        toast.error("Erro ao verificar sessão", {
+          description: "Faça login novamente."
+        });
+        navigate("/auth");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkSession();
   }, [navigate]);
 
   const handleBusinessInfoComplete = async (info: BusinessInfo) => {
     setBusinessInfo(info);
     // Salva info do negócio na tabela business_info, associando ao usuário autenticado
     if (user) {
-      await supabase.from("business_info").upsert([
-        {
-          user_id: user.id,
-          business_name: info.businessName,
-          // Pode adicionar outros campos se a tabela for expandida futuramente
-        }
-      ]);
+      try {
+        const { error } = await supabase.from("business_info").upsert([
+          {
+            user_id: user.id,
+            business_name: info.businessName,
+          }
+        ]);
+        
+        if (error) throw error;
+        setCurrentStep("api");
+      } catch (error) {
+        console.error("Error saving business info:", error);
+        toast.error("Erro ao salvar informações do negócio", {
+          description: "Tente novamente mais tarde."
+        });
+      }
     }
-    setCurrentStep("api");
   };
 
   const handleApiKeysSubmitted = (openAiKey: string, unsplashKey: string) => {
@@ -57,10 +88,25 @@ const Index = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    navigate("/auth");
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      navigate("/auth");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Erro ao fazer logout", {
+        description: "Tente novamente."
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return null; // Aguarda checagem de sessão

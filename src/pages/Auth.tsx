@@ -4,10 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 const AuthPage = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -32,41 +31,48 @@ const AuthPage = () => {
     e.preventDefault();
     setAuthLoading(true);
     if (!email || !password) {
-      toast({
-        title: "Preencha todos os campos.",
-        description: "E-mail e senha são obrigatórios.",
-        variant: "destructive",
+      toast.error("Preencha todos os campos.", {
+        description: "E-mail e senha são obrigatórios."
       });
       setAuthLoading(false);
       return;
     }
-    if (isLogin) {
-      // Log in
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        toast({
-          title: "Erro ao entrar",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    } else {
-      // Sign up
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        toast({
-          title: "Erro ao cadastrar",
-          description: error.message,
-          variant: "destructive",
-        });
+    try {
+      if (isLogin) {
+        // Log in
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          toast.error("Erro ao entrar", {
+            description: error.message
+          });
+          console.error("Login error:", error);
+        } else {
+          toast.success("Login realizado com sucesso!");
+          navigate("/");
+        }
       } else {
-        toast({
-          title: "Cadastro realizado!",
-          description: "Verifique seu e-mail para confirmar o cadastro.",
-        });
+        // Sign up
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          toast.error("Erro ao cadastrar", {
+            description: error.message
+          });
+          console.error("Signup error:", error);
+        } else {
+          toast.success("Cadastro realizado!", {
+            description: "Verifique seu e-mail para confirmar o cadastro."
+          });
+          // Note: don't navigate after signup - user needs to verify email first
+        }
       }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      toast.error("Erro na autenticação", {
+        description: "Ocorreu um erro inesperado. Tente novamente."
+      });
+    } finally {
+      setAuthLoading(false);
     }
-    setAuthLoading(false);
   };
 
   return (
