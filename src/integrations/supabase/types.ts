@@ -11,23 +11,38 @@ export type Database = {
     Tables: {
       business_info: {
         Row: {
+          additional_info: string | null
           business_name: string
           created_at: string | null
           id: string
+          industry: string | null
+          post_objective: string | null
+          target_audience: string | null
+          tone: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          additional_info?: string | null
           business_name: string
           created_at?: string | null
           id?: string
+          industry?: string | null
+          post_objective?: string | null
+          target_audience?: string | null
+          tone?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          additional_info?: string | null
           business_name?: string
           created_at?: string | null
           id?: string
+          industry?: string | null
+          post_objective?: string | null
+          target_audience?: string | null
+          tone?: string | null
           updated_at?: string | null
           user_id?: string
         }

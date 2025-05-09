@@ -52,17 +52,23 @@ const Index = () => {
 
   const handleBusinessInfoComplete = async (info: BusinessInfo) => {
     setBusinessInfo(info);
-    // Salva info do negócio na tabela business_info, associando ao usuário autenticado
+    // Salva todos os campos de informação do negócio no Supabase, associando ao usuário autenticado
     if (user) {
       try {
         const { error } = await supabase.from("business_info").upsert([
           {
             user_id: user.id,
             business_name: info.businessName,
+            industry: info.industry,
+            target_audience: info.targetAudience,
+            post_objective: info.postObjective,
+            tone: info.tone,
+            additional_info: info.additionalInfo || null
           }
         ]);
         
         if (error) throw error;
+        toast.success("Informações do negócio salvas com sucesso!");
         setCurrentStep("api");
       } catch (error) {
         console.error("Error saving business info:", error);
