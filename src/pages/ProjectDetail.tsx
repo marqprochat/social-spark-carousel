@@ -99,7 +99,14 @@ const ProjectDetail = () => {
         .order("created_at", { ascending: false });
       
       if (carouselsError) throw carouselsError;
-      setCarousels(carouselsData || []);
+      
+      // Ensure slides are always an array by parsing the JSON if needed
+      const formattedCarousels = carouselsData?.map(carousel => ({
+        ...carousel,
+        slides: Array.isArray(carousel.slides) ? carousel.slides : []
+      })) || [];
+      
+      setCarousels(formattedCarousels);
     } catch (error) {
       console.error("Error fetching project data:", error);
       toast.error("Erro ao carregar dados do projeto");
