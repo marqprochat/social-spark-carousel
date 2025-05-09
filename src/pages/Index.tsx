@@ -106,6 +106,10 @@ const Index = () => {
     }
   };
 
+  const goToProjects = () => {
+    navigate("/projects");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -121,7 +125,8 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-brand-light to-white p-4">
       <div className="w-full max-w-6xl">
-        <div className="flex justify-end p-2">
+        <div className="flex justify-end p-2 gap-2">
+          <Button variant="outline" onClick={goToProjects}>Meus Projetos</Button>
           <Button variant="outline" onClick={handleLogout}>Sair</Button>
         </div>
         {currentStep === "info" && (
