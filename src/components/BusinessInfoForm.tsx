@@ -5,15 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export type BusinessInfo = {
   businessName: string;
   industry: string;
-  targetAudience: string;
-  postObjective: string;
-  tone: string;
-  additionalInfo?: string;
+  description?: string;
 };
 
 interface BusinessInfoFormProps {
@@ -40,37 +37,12 @@ const INDUSTRIES = [
   "Outros"
 ];
 
-const TONE_OPTIONS = [
-  "Profissional",
-  "Descontraído",
-  "Informativo",
-  "Inspirador",
-  "Humorístico",
-  "Formal",
-  "Amigável",
-  "Persuasivo"
-];
-
-const POST_OBJECTIVES = [
-  "Aumentar Engajamento",
-  "Vender um Produto",
-  "Aumentar Reconhecimento da Marca",
-  "Educar/Informar",
-  "Promover um Evento",
-  "Gerar Leads",
-  "Compartilhar Novidades",
-  "Contar uma História"
-];
-
 const BusinessInfoForm: React.FC<BusinessInfoFormProps> = ({ onComplete }) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<BusinessInfo>({
     businessName: "",
     industry: "",
-    targetAudience: "",
-    postObjective: "",
-    tone: "",
-    additionalInfo: "",
+    description: "",
   });
 
   const handleInputChange = (
@@ -90,10 +62,7 @@ const BusinessInfoForm: React.FC<BusinessInfoFormProps> = ({ onComplete }) => {
     // Validação básica
     if (
       !formData.businessName ||
-      !formData.industry ||
-      !formData.targetAudience ||
-      !formData.postObjective ||
-      !formData.tone
+      !formData.industry
     ) {
       toast({
         title: "Campos obrigatórios",
@@ -113,11 +82,11 @@ const BusinessInfoForm: React.FC<BusinessInfoFormProps> = ({ onComplete }) => {
       </h1>
       
       <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-semibold mb-6">Sobre seu Negócio</h2>
+        <h2 className="text-2xl font-semibold mb-6">Sobre sua Empresa</h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="businessName">Nome do Negócio</Label>
+            <Label htmlFor="businessName">Nome da Empresa</Label>
             <Input
               id="businessName"
               name="businessName"
@@ -147,61 +116,12 @@ const BusinessInfoForm: React.FC<BusinessInfoFormProps> = ({ onComplete }) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="targetAudience">Público-alvo</Label>
-            <Input
-              id="targetAudience"
-              name="targetAudience"
-              placeholder="Ex: Mulheres, 25-45 anos, profissionais, interessadas em bem-estar"
-              value={formData.targetAudience}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="postObjective">Objetivo do Post</Label>
-            <Select
-              value={formData.postObjective}
-              onValueChange={(value) => handleSelectChange("postObjective", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o objetivo" />
-              </SelectTrigger>
-              <SelectContent>
-                {POST_OBJECTIVES.map((objective) => (
-                  <SelectItem key={objective} value={objective}>
-                    {objective}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tone">Tom de Comunicação</Label>
-            <Select
-              value={formData.tone}
-              onValueChange={(value) => handleSelectChange("tone", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tom" />
-              </SelectTrigger>
-              <SelectContent>
-                {TONE_OPTIONS.map((tone) => (
-                  <SelectItem key={tone} value={tone}>
-                    {tone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="additionalInfo">Informações Adicionais (opcional)</Label>
+            <Label htmlFor="description">Descrição (opcional)</Label>
             <Textarea
-              id="additionalInfo"
-              name="additionalInfo"
-              placeholder="Detalhes específicos que gostaria de mencionar no post..."
-              value={formData.additionalInfo}
+              id="description"
+              name="description"
+              placeholder="Descreva sua empresa..."
+              value={formData.description}
               onChange={handleInputChange}
               rows={4}
             />

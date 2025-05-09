@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import BusinessInfoForm, { BusinessInfo } from "@/components/BusinessInfoForm";
@@ -52,7 +51,7 @@ const Index = () => {
 
   const handleBusinessInfoComplete = async (info: BusinessInfo) => {
     setBusinessInfo(info);
-    // Salva todos os campos de informação do negócio no Supabase, associando ao usuário autenticado
+    // Salva as informações essenciais da empresa no Supabase
     if (user) {
       try {
         const { error } = await supabase.from("business_info").upsert([
@@ -60,19 +59,16 @@ const Index = () => {
             user_id: user.id,
             business_name: info.businessName,
             industry: info.industry,
-            target_audience: info.targetAudience,
-            post_objective: info.postObjective,
-            tone: info.tone,
-            additional_info: info.additionalInfo || null
+            additional_info: info.description || null
           }
         ]);
         
         if (error) throw error;
-        toast.success("Informações do negócio salvas com sucesso!");
+        toast.success("Informações da empresa salvas com sucesso!");
         setCurrentStep("api");
       } catch (error) {
         console.error("Error saving business info:", error);
-        toast.error("Erro ao salvar informações do negócio", {
+        toast.error("Erro ao salvar informações da empresa", {
           description: "Tente novamente mais tarde."
         });
       }
