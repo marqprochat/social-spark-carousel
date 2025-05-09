@@ -28,17 +28,17 @@ export async function generateCarouselContent({
       
       Nome do negócio: ${businessInfo.businessName}
       Segmento: ${businessInfo.industry}
-      Público-alvo: ${businessInfo.targetAudience}
-      Objetivo: ${businessInfo.postObjective}
-      Tom de comunicação: ${businessInfo.tone}
+      ${businessInfo.targetAudience ? `Público-alvo: ${businessInfo.targetAudience}` : ''}
+      ${businessInfo.postObjective ? `Objetivo: ${businessInfo.postObjective}` : ''}
+      ${businessInfo.tone ? `Tom de comunicação: ${businessInfo.tone}` : ''}
       ${businessInfo.additionalInfo ? `Informações adicionais: ${businessInfo.additionalInfo}` : ''}
       
       Os textos devem ser:
       1. Específicos e relevantes para o segmento do negócio
-      2. Direcionados especificamente ao público-alvo mencionado
-      3. Adequados ao tom de comunicação solicitado
-      4. Focados no objetivo de marketing informado
-      5. Diretos e impactantes, com no máximo 200 caracteres
+      2. Diretos e impactantes, com no máximo 200 caracteres
+      ${businessInfo.targetAudience ? '3. Direcionados especificamente ao público-alvo mencionado' : ''}
+      ${businessInfo.postObjective ? '4. Focados no objetivo de marketing informado' : ''}
+      ${businessInfo.tone ? '5. Adequados ao tom de comunicação solicitado' : ''}
       
       IMPORTANTE: Cada texto deve ter no máximo 200 caracteres, ser direto e adequado para um slide único. 
       Formate cada texto como um item em uma lista, numerado de 1 a ${numSlides}.

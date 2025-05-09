@@ -11,6 +11,11 @@ export type BusinessInfo = {
   businessName: string;
   industry: string;
   description?: string;
+  // Add missing properties that are used in the services
+  targetAudience?: string;
+  postObjective?: string;
+  tone?: string;
+  additionalInfo?: string;
 };
 
 interface BusinessInfoFormProps {

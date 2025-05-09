@@ -110,28 +110,39 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
 
       if (businessError) throw businessError;
       
+      // Obter o user_id da sessão atual
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      
+      if (!userId) {
+        throw new Error("Usuário não autenticado");
+      }
+      
       // Criar um novo projeto
       const { data: projectData, error: projectError } = await supabase
         .from("projects")
-        .insert([{
+        .insert({
           name: projectName,
           description: projectDescription,
-          business_id: businessData.id
-        }])
+          business_id: businessData.id,
+          user_id: userId
+        })
         .select()
         .single();
 
       if (projectError) throw projectError;
       
       // Criar um novo carrossel dentro do projeto
+      const slidesJson = JSON.stringify(slides);
+      
       const { error: carouselError } = await supabase
         .from("carousels")
-        .insert([{
+        .insert({
           project_id: projectData.id,
           title: `Carrossel de ${businessInfo.businessName}`,
           description: `Gerado em ${new Date().toLocaleDateString()}`,
-          slides: slides
-        }]);
+          slides: slidesJson
+        });
 
       if (carouselError) throw carouselError;
       
