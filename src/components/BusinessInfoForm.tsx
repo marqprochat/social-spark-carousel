@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft } from "lucide-react";
 
 export type BusinessInfo = {
   businessName: string;
@@ -20,6 +21,7 @@ export type BusinessInfo = {
 
 interface BusinessInfoFormProps {
   onComplete: (info: BusinessInfo) => void;
+  onBack?: () => void;
 }
 
 const INDUSTRIES = [
@@ -42,7 +44,7 @@ const INDUSTRIES = [
   "Outros"
 ];
 
-const BusinessInfoForm: React.FC<BusinessInfoFormProps> = ({ onComplete }) => {
+const BusinessInfoForm: React.FC<BusinessInfoFormProps> = ({ onComplete, onBack }) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<BusinessInfo>({
     businessName: "",
@@ -87,6 +89,18 @@ const BusinessInfoForm: React.FC<BusinessInfoFormProps> = ({ onComplete }) => {
       </h1>
       
       <div className="bg-white p-8 rounded-lg shadow-lg">
+        {onBack && (
+          <Button 
+            type="button" 
+            variant="ghost" 
+            onClick={onBack} 
+            className="mb-4 pl-2 flex items-center text-muted-foreground"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Voltar
+          </Button>
+        )}
+
         <h2 className="text-2xl font-semibold mb-6">Sobre sua Empresa</h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">
