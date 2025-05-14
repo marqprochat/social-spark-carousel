@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCarouselState } from "./carousel/useCarouselState";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 import SlideCanvas from "./carousel/SlideCanvas";
@@ -91,7 +91,12 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     removeBackgroundImage,
     handleImageResize,
     updateSlideImage
-  } = useCarouselState({ businessInfo, openAiKey, unsplashKey });
+  } = useCarouselState({ 
+    businessInfo, 
+    openAiKey, 
+    unsplashKey,
+    autoInitialize: true 
+  });
 
   const handleSaveToProject = async () => {
     if (!projectName.trim()) {

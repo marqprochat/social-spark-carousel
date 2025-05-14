@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -20,9 +19,15 @@ interface UseCarouselStateProps {
   businessInfo: BusinessInfo;
   openAiKey: string;
   unsplashKey: string;
+  autoInitialize?: boolean;
 }
 
-export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCarouselStateProps) => {
+export const useCarouselState = ({ 
+  businessInfo, 
+  openAiKey, 
+  unsplashKey,
+  autoInitialize = false
+}: UseCarouselStateProps) => {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,38 +55,51 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
   const [slideBackgroundColor, setSlideBackgroundColor] = useState("#f5f5f5");
   const [backgroundImageOpacity, setBackgroundImageOpacity] = useState(1);
   
-  useEffect(() => {
-    const initializeCarousel = async () => {
-      try {
-        setIsLoading(true);
-        
-        const [fetchedImages, generatedTexts] = await Promise.all([
-          searchImages({ businessInfo, accessKey: unsplashKey }),
-          generateCarouselContent({ businessInfo, apiKey: openAiKey, numSlides: 5 }),
-        ]);
-        
-        if (fetchedImages.length === 0 || generatedTexts.length === 0) {
-          throw new Error("Não foi possível obter recursos suficientes");
-        }
-        
-        setImages(fetchedImages);
-        
-        const newSlides = initializeSlides(generatedTexts, fetchedImages);
-        
-        setSlides(newSlides);
-      } catch (error) {
-        console.error("Erro ao inicializar carrossel:", error);
-        toast.error(error instanceof Error 
-          ? error.message 
-          : "Erro ao criar carrossel. Por favor, tente novamente."
-        );
-      } finally {
-        setIsLoading(false);
+  const initializeCarousel = async () => {
+    try {
+      setIsLoading(true);
+      toast.loading("Gerando conteúdo com IA...", { id: "ai-generation" });
+      
+      // Generate better AI search terms based on business context
+      const aiSearchTerm = `${businessInfo.businessName} ${businessInfo.industry} ${businessInfo.postObjective} ${businessInfo.tone} professional marketing images`;
+      
+      const [fetchedImages, generatedTexts] = await Promise.all([
+        searchImages({ 
+          businessInfo, 
+          accessKey: unsplashKey,
+          searchQuery: aiSearchTerm
+        }),
+        generateCarouselContent({ businessInfo, apiKey: openAiKey, numSlides: 5 }),
+      ]);
+      
+      if (fetchedImages.length === 0 || generatedTexts.length === 0) {
+        toast.dismiss("ai-generation");
+        throw new Error("Não foi possível obter recursos suficientes");
       }
-    };
-    
-    initializeCarousel();
-  }, [businessInfo, openAiKey, unsplashKey]);
+      
+      setImages(fetchedImages);
+      
+      const newSlides = initializeSlides(generatedTexts, fetchedImages);
+      
+      setSlides(newSlides);
+      toast.success("Carrossel criado com IA!", { id: "ai-generation" });
+    } catch (error) {
+      console.error("Erro ao inicializar carrossel:", error);
+      toast.error(error instanceof Error 
+        ? error.message 
+        : "Erro ao criar carrossel. Por favor, tente novamente.",
+        { id: "ai-generation" }
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (autoInitialize) {
+      initializeCarousel();
+    }
+  }, [autoInitialize, businessInfo, openAiKey, unsplashKey]);
   
   useEffect(() => {
     if (selectedTextBoxId) {
@@ -120,15 +138,24 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
   const handleSearchImages = async () => {
     try {
       setIsLoading(true);
+      toast.loading("Buscando imagens...");
+      
+      // Enrich the search query with business context for better AI-driven results
+      let enhancedQuery = searchTerm;
+      
+      if (!enhancedQuery && businessInfo) {
+        enhancedQuery = `${businessInfo.businessName} ${businessInfo.industry} ${businessInfo.postObjective || ""} images`;
+      }
+      
       const newBusinessInfo = {
         ...businessInfo,
-        additionalInfo: searchTerm || businessInfo.additionalInfo || ""
+        additionalInfo: enhancedQuery || businessInfo.additionalInfo || ""
       };
       
       const fetchedImages = await searchImages({
         businessInfo: newBusinessInfo,
         accessKey: unsplashKey,
-        searchQuery: searchTerm
+        searchQuery: enhancedQuery
       });
       
       if (fetchedImages.length === 0) {
@@ -136,7 +163,10 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
       }
       
       setImages(fetchedImages);
+      toast.dismiss();
+      toast.success(`${fetchedImages.length} imagens encontradas`);
     } catch (error) {
+      toast.dismiss();
       toast.error(error instanceof Error 
         ? error.message 
         : "Erro ao buscar imagens"
@@ -608,6 +638,7 @@ export const useCarouselState = ({ businessInfo, openAiKey, unsplashKey }: UseCa
     updateBackgroundColor,
     updateBackgroundImageOpacity,
     removeBackgroundImage,
-    handleImageResize
+    handleImageResize,
+    initializeCarousel
   };
 };

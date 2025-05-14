@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ChevronLeft, PlusIcon, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, PlusIcon, Pencil, Trash2, Sparkles } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Project {
@@ -18,6 +17,11 @@ interface Project {
   business_id: string;
   business_info?: {
     business_name: string;
+    industry?: string;
+    target_audience?: string;
+    post_objective?: string;
+    tone?: string;
+    additional_info?: string;
   };
 }
 
@@ -27,6 +31,15 @@ interface Carousel {
   description: string | null;
   slides: any[];
   created_at: string;
+}
+
+interface BusinessInfo {
+  business_name: string;
+  industry?: string;
+  target_audience?: string;
+  post_objective?: string;
+  tone?: string;
+  additional_info?: string;
 }
 
 const ProjectDetail = () => {
@@ -43,6 +56,8 @@ const ProjectDetail = () => {
     description: ""
   });
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
+  const [isCreatingWithAI, setIsCreatingWithAI] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,13 +98,18 @@ const ProjectDetail = () => {
     try {
       setLoading(true);
       
-      // Fetch project details
+      // Fetch project details with business info
       const { data: projectData, error: projectError } = await supabase
         .from("projects")
         .select(`
           *,
           business_info (
-            business_name
+            business_name,
+            industry,
+            target_audience,
+            post_objective,
+            tone,
+            additional_info
           )
         `)
         .eq("id", projectId)
@@ -97,6 +117,7 @@ const ProjectDetail = () => {
       
       if (projectError) throw projectError;
       setProject(projectData);
+      setBusinessInfo(projectData.business_info as BusinessInfo);
       
       // Fetch carousels for this project
       const { data: carouselsData, error: carouselsError } = await supabase
@@ -125,6 +146,46 @@ const ProjectDetail = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setCarouselForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const createCarouselWithAI = async () => {
+    if (!projectId || !carouselForm.title.trim()) {
+      toast.error("Título do carrossel é obrigatório");
+      return;
+    }
+
+    try {
+      setIsCreatingWithAI(true);
+      
+      // Create empty carousel first
+      const { data: carouselData, error: carouselError } = await supabase
+        .from("carousels")
+        .insert({
+          project_id: projectId,
+          title: carouselForm.title,
+          description: carouselForm.description || null,
+          slides: []
+        })
+        .select();
+      
+      if (carouselError) throw carouselError;
+      
+      toast.success("Carrossel criado com sucesso!");
+      setCarouselForm({ title: "", description: "" });
+      setDialogOpen(false);
+      
+      // Navigate to carousel editor where AI will automatically generate content
+      if (carouselData && carouselData[0]) {
+        navigate(`/carousels/${carouselData[0].id}`);
+      } else {
+        fetchProjectData(); // Refresh carousels list
+      }
+    } catch (error) {
+      console.error("Error creating carousel:", error);
+      toast.error("Erro ao criar carrossel");
+    } finally {
+      setIsCreatingWithAI(false);
+    }
   };
 
   const createCarousel = async () => {
@@ -316,11 +377,28 @@ const ProjectDetail = () => {
                     <DialogClose asChild>
                       <Button variant="outline">Cancelar</Button>
                     </DialogClose>
-                    <Button 
-                      onClick={carouselToEdit ? editCarousel : createCarousel}
-                    >
-                      {carouselToEdit ? "Salvar" : "Criar"}
-                    </Button>
+                    {carouselToEdit ? (
+                      <Button onClick={editCarousel}>
+                        Salvar
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={createCarousel}
+                        >
+                          Criar Vazio
+                        </Button>
+                        <Button 
+                          onClick={createCarouselWithAI}
+                          disabled={isCreatingWithAI}
+                          className="flex items-center gap-2"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          {isCreatingWithAI ? "Criando..." : "Criar com IA"}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </DialogContent>
@@ -336,9 +414,22 @@ const ProjectDetail = () => {
             <p className="text-muted-foreground mb-6">
               Crie seu primeiro carrossel para começar a criar conteúdo.
             </p>
-            <Button onClick={openCreateDialog}>
-              Criar Novo Carrossel
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button onClick={openCreateDialog} variant="outline">
+                Criar Carrossel Vazio
+              </Button>
+              <Button onClick={() => {
+                openCreateDialog();
+                // Pre-fill with suggestion for AI generation
+                setCarouselForm({
+                  title: `Carrossel de ${project.business_info?.business_name || "Marketing"}`,
+                  description: "Gerado com inteligência artificial"
+                });
+              }} className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Criar com IA
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
