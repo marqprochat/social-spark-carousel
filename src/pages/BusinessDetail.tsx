@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,33 +15,24 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
-  business_id: string;
-  business_info?: {
-    business_name: string;
-  };
-}
-
-interface Carousel {
-  id: string;
-  title: string;
-  description: string | null;
-  slides: any[];
   created_at: string;
+  business_id: string;
 }
 
-const ProjectDetail = () => {
-  const { projectId } = useParams<{ projectId: string }>();
-  const [project, setProject] = useState<Project | null>(null);
-  const [carousels, setCarousels] = useState<Carousel[]>([]);
+const BusinessDetail = () => {
+  const { businessId } = useParams<{ businessId: string }>();
+  const location = useLocation();
+  const businessName = (location.state as any)?.businessName || "Empresa";
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [carouselToEdit, setCarouselToEdit] = useState<Carousel | null>(null);
-  const [carouselToDelete, setCarouselToDelete] = useState<string | null>(null);
-  const [carouselForm, setCarouselForm] = useState({
-    title: "",
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [projectForm, setProjectForm] = useState({
+    name: "",
     description: ""
   });
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -56,7 +47,9 @@ const ProjectDetail = () => {
           return;
         }
         
-        fetchProjectData();
+        if (businessId) {
+          fetchProjects();
+        }
         
         // Set up auth state listener
         const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
@@ -71,52 +64,30 @@ const ProjectDetail = () => {
           description: "Faça login novamente."
         });
         navigate("/auth");
+      } finally {
+        setLoading(false);
       }
     };
     
     checkSession();
-  }, [navigate, projectId]);
+  }, [navigate, businessId]);
 
-  const fetchProjectData = async () => {
-    if (!projectId) return;
+  const fetchProjects = async () => {
+    if (!businessId) return;
     
     try {
       setLoading(true);
-      
-      // Fetch project details
-      const { data: projectData, error: projectError } = await supabase
+      const { data, error } = await supabase
         .from("projects")
-        .select(`
-          *,
-          business_info (
-            business_name
-          )
-        `)
-        .eq("id", projectId)
-        .single();
-      
-      if (projectError) throw projectError;
-      setProject(projectData);
-      
-      // Fetch carousels for this project
-      const { data: carouselsData, error: carouselsError } = await supabase
-        .from("carousels")
         .select("*")
-        .eq("project_id", projectId)
+        .eq("business_id", businessId)
         .order("created_at", { ascending: false });
       
-      if (carouselsError) throw carouselsError;
-      
-      // Ensure slides are always an array by parsing the JSON if needed
-      const formattedCarousels = carouselsData?.map(carousel => ({
-        ...carousel,
-        slides: Array.isArray(carousel.slides) ? carousel.slides : []
-      })) || [];
-      
-      setCarousels(formattedCarousels);
+      if (error) throw error;
+      setProjects(data || []);
     } catch (error) {
-      console.error("Error fetching project data:", error);
-      toast.error("Erro ao carregar dados do projeto");
+      console.error("Error fetching projects:", error);
+      toast.error("Erro ao carregar projetos");
     } finally {
       setLoading(false);
     }
@@ -124,114 +95,113 @@ const ProjectDetail = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setCarouselForm((prev) => ({ ...prev, [name]: value }));
+    setProjectForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const createCarousel = async () => {
-    if (!projectId || !carouselForm.title.trim()) {
-      toast.error("Título do carrossel é obrigatório");
+  const handleCreateProject = async () => {
+    if (!projectForm.name || !businessId) {
+      toast.error("Nome do projeto é obrigatório");
       return;
     }
-    
+
     try {
       const { data, error } = await supabase
-        .from("carousels")
+        .from("projects")
         .insert({
-          project_id: projectId,
-          title: carouselForm.title,
-          description: carouselForm.description || null,
-          slides: []
+          user_id: user.id,
+          business_id: businessId,
+          name: projectForm.name,
+          description: projectForm.description || null
         })
         .select();
       
       if (error) throw error;
       
-      toast.success("Carrossel criado com sucesso!");
-      setCarouselForm({ title: "", description: "" });
+      toast.success("Projeto criado com sucesso!");
       setDialogOpen(false);
-      fetchProjectData();
+      setProjectForm({ name: "", description: "" });
+      fetchProjects();
     } catch (error) {
-      console.error("Error creating carousel:", error);
-      toast.error("Erro ao criar carrossel");
+      console.error("Error creating project:", error);
+      toast.error("Erro ao criar projeto");
     }
   };
 
-  const editCarousel = async () => {
-    if (!carouselToEdit) return;
-    if (!carouselForm.title) {
-      toast.error("Título do carrossel é obrigatório");
+  const handleEditProject = async () => {
+    if (!projectToEdit) return;
+    if (!projectForm.name) {
+      toast.error("Nome do projeto é obrigatório");
       return;
     }
 
     try {
       const { error } = await supabase
-        .from("carousels")
+        .from("projects")
         .update({
-          title: carouselForm.title,
-          description: carouselForm.description || null
+          name: projectForm.name,
+          description: projectForm.description || null
         })
-        .eq("id", carouselToEdit.id);
+        .eq("id", projectToEdit.id);
       
       if (error) throw error;
       
-      toast.success("Carrossel atualizado com sucesso!");
+      toast.success("Projeto atualizado com sucesso!");
       setDialogOpen(false);
-      setCarouselToEdit(null);
-      fetchProjectData();
+      setProjectToEdit(null);
+      fetchProjects();
     } catch (error) {
-      console.error("Error updating carousel:", error);
-      toast.error("Erro ao atualizar carrossel");
+      console.error("Error updating project:", error);
+      toast.error("Erro ao atualizar projeto");
     }
   };
 
-  const deleteCarousel = async () => {
-    if (!carouselToDelete) return;
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
 
     try {
-      const { error } = await supabase
+      // Delete carousels associated with this project first
+      const { error: carouselError } = await supabase
         .from("carousels")
         .delete()
-        .eq("id", carouselToDelete);
+        .eq("project_id", projectToDelete);
+      
+      if (carouselError) throw carouselError;
+      
+      // Delete the project
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectToDelete);
       
       if (error) throw error;
       
-      toast.success("Carrossel excluído com sucesso!");
+      toast.success("Projeto excluído com sucesso!");
       setAlertDialogOpen(false);
-      setCarouselToDelete(null);
-      fetchProjectData();
+      setProjectToDelete(null);
+      fetchProjects();
     } catch (error) {
-      console.error("Error deleting carousel:", error);
-      toast.error("Erro ao excluir carrossel");
+      console.error("Error deleting project:", error);
+      toast.error("Erro ao excluir projeto");
     }
   };
 
-  const openEditDialog = (carousel: Carousel) => {
-    setCarouselToEdit(carousel);
-    setCarouselForm({
-      title: carousel.title,
-      description: carousel.description || ""
+  const openEditDialog = (project: Project) => {
+    setProjectToEdit(project);
+    setProjectForm({
+      name: project.name,
+      description: project.description || ""
     });
     setDialogOpen(true);
   };
 
   const openCreateDialog = () => {
-    setCarouselToEdit(null);
-    setCarouselForm({ title: "", description: "" });
+    setProjectToEdit(null);
+    setProjectForm({ name: "", description: "" });
     setDialogOpen(true);
   };
 
-  const goToCarouselEditor = (carouselId: string) => {
-    navigate(`/carousels/${carouselId}`);
-  };
-
-  const goToBusinessProjects = () => {
-    if (project && project.business_id) {
-      navigate(`/businesses/${project.business_id}`, { 
-        state: { businessName: project.business_info?.business_name || "Empresa" } 
-      });
-    } else {
-      navigate("/businesses");
-    }
+  const viewCarousels = (projectId: string) => {
+    navigate(`/projects/${projectId}`);
   };
 
   if (loading) {
@@ -242,73 +212,54 @@ const ProjectDetail = () => {
     );
   }
 
-  if (!project) {
-    return (
-      <div className="min-h-screen p-4">
-        <div className="max-w-6xl mx-auto text-center py-20">
-          <h2 className="text-2xl font-bold mb-4">Projeto não encontrado</h2>
-          <Button onClick={() => navigate("/businesses")}>
-            Voltar para Empresas
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen p-4 bg-gradient-to-br from-brand-light to-white">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <Button 
             variant="outline" 
-            onClick={goToBusinessProjects}
+            onClick={() => navigate("/businesses")}
             className="mb-4"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Voltar para Projetos
+            Voltar para Empresas
           </Button>
           
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-brand-primary">{project.name}</h1>
-              <p className="text-muted-foreground">
-                {project.business_info?.business_name}
-              </p>
-              {project.description && (
-                <p className="mt-2 text-sm">{project.description}</p>
-              )}
+              <h1 className="text-3xl font-bold text-brand-primary">Projetos de {businessName}</h1>
             </div>
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={openCreateDialog} className="flex items-center gap-2">
                   <PlusIcon size={16} />
-                  <span>Novo Carrossel</span>
+                  <span>Novo Projeto</span>
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>
-                    {carouselToEdit ? "Editar Carrossel" : "Criar Novo Carrossel"}
+                    {projectToEdit ? "Editar Projeto" : "Criar Novo Projeto"}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Título</label>
+                    <label className="text-sm font-medium">Nome do Projeto</label>
                     <Input
-                      name="title"
-                      value={carouselForm.title}
+                      name="name"
+                      value={projectForm.name}
                       onChange={handleInputChange}
-                      placeholder="Título do carrossel"
+                      placeholder="Nome do projeto"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Descrição (opcional)</label>
                     <Textarea
                       name="description"
-                      value={carouselForm.description}
+                      value={projectForm.description}
                       onChange={handleInputChange}
-                      placeholder="Descrição do carrossel"
+                      placeholder="Descrição do projeto"
                       rows={3}
                     />
                   </div>
@@ -317,9 +268,9 @@ const ProjectDetail = () => {
                       <Button variant="outline">Cancelar</Button>
                     </DialogClose>
                     <Button 
-                      onClick={carouselToEdit ? editCarousel : createCarousel}
+                      onClick={projectToEdit ? handleEditProject : handleCreateProject}
                     >
-                      {carouselToEdit ? "Salvar" : "Criar"}
+                      {projectToEdit ? "Salvar" : "Criar"}
                     </Button>
                   </div>
                 </div>
@@ -328,47 +279,43 @@ const ProjectDetail = () => {
           </div>
         </div>
         
-        <h2 className="text-xl font-semibold mb-4">Carrosséis</h2>
-        
-        {carousels.length === 0 ? (
+        {projects.length === 0 ? (
           <div className="text-center py-20 bg-muted/30 rounded-lg">
-            <h3 className="text-xl font-medium mb-2">Nenhum carrossel encontrado</h3>
+            <h3 className="text-xl font-medium mb-2">Nenhum projeto encontrado</h3>
             <p className="text-muted-foreground mb-6">
-              Crie seu primeiro carrossel para começar a criar conteúdo.
+              Crie seu primeiro projeto para começar a gerenciar seus carrosséis.
             </p>
             <Button onClick={openCreateDialog}>
-              Criar Novo Carrossel
+              Criar Novo Projeto
             </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {carousels.map(carousel => (
-              <Card key={carousel.id} className="overflow-hidden">
+            {projects.map(project => (
+              <Card key={project.id} className="overflow-hidden">
                 <CardHeader>
-                  <CardTitle>{carousel.title}</CardTitle>
+                  <CardTitle>{project.name}</CardTitle>
                   <CardDescription>
-                    {new Date(carousel.created_at).toLocaleDateString("pt-BR")}
+                    {new Date(project.created_at).toLocaleDateString("pt-BR")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground line-clamp-3">
-                    {carousel.description || "Sem descrição"}
-                  </p>
-                  <p className="text-sm mt-2">
-                    {carousel.slides.length} slide{carousel.slides.length !== 1 ? 's' : ''}
+                    {project.description || "Sem descrição"}
                   </p>
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button 
-                    onClick={() => goToCarouselEditor(carousel.id)}
+                    variant="outline" 
+                    onClick={() => viewCarousels(project.id)}
                   >
-                    Editar Carrossel
+                    Ver Carrosséis
                   </Button>
                   <div className="flex gap-2">
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => openEditDialog(carousel)}
+                      onClick={() => openEditDialog(project)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -378,7 +325,7 @@ const ProjectDetail = () => {
                           variant="ghost" 
                           size="icon"
                           onClick={() => {
-                            setCarouselToDelete(carousel.id);
+                            setProjectToDelete(project.id);
                             setAlertDialogOpen(true);
                           }}
                         >
@@ -387,15 +334,15 @@ const ProjectDetail = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir Carrossel</AlertDialogTitle>
+                          <AlertDialogTitle>Excluir Projeto</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Tem certeza que deseja excluir este carrossel? Esta ação não pode ser desfeita.
+                            Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita e todos os carrosséis associados serão excluídos.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction 
-                            onClick={deleteCarousel}
+                            onClick={handleDeleteProject}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
                             Excluir
@@ -414,4 +361,4 @@ const ProjectDetail = () => {
   );
 };
 
-export default ProjectDetail;
+export default BusinessDetail;
