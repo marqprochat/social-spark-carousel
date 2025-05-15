@@ -44,8 +44,8 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
         carouselDescription: carouselDescription || ""
       };
 
-      // Generate a high-quality search term based on the business context
-      const searchSuggestion = `${context.businessName} ${context.industry} ${context.objective} ${context.tone} ${context.carouselDescription}`.trim();
+      // Generate a comprehensive search term based on all business context
+      const searchSuggestion = `${context.businessName} ${context.industry} ${context.objective} ${context.tone} professional high quality marketing images for ${context.targetAudience}`.trim();
       
       setAiSuggestion(searchSuggestion);
       setSearchTerm(searchSuggestion);
@@ -63,6 +63,13 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
       setIsGenerating(false);
     }
   };
+
+  // Automatically generate search term when component loads if business info is available
+  useEffect(() => {
+    if (businessInfo && !searchTerm && !aiSuggestion) {
+      generateAISearchTerm();
+    }
+  }, [businessInfo]);
 
   return (
     <div className="space-y-2">

@@ -56,8 +56,17 @@ const CarouselEditor = () => {
         .eq("id", carouselId)
         .single();
       
-      if (carouselError) throw carouselError;
-      if (!carouselData) throw new Error("Carrossel não encontrado");
+      if (carouselError) {
+        console.error("Error fetching carousel:", carouselError);
+        throw carouselError;
+      }
+      
+      if (!carouselData) {
+        console.error("No carousel data found");
+        throw new Error("Carrossel não encontrado");
+      }
+      
+      console.log("Carousel data:", carouselData);
       
       // Extract business info from the carousel data
       const businessInfo: BusinessInfo = {
