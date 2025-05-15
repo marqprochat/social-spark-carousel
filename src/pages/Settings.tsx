@@ -7,29 +7,60 @@ import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import { getApiKeys, saveApiKeys } from "@/utils/apiKeys";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
   const [openAiKey, setOpenAiKey] = useState<string>("");
   const [unsplashKey, setUnsplashKey] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Carregar chaves existentes
-    const keys = getApiKeys();
-    if (keys) {
-      setOpenAiKey(keys.openAiKey || "");
-      setUnsplashKey(keys.unsplashKey || "");
-    }
+    // Verificar se o usuário está autenticado
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
+        loadApiKeys();
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  const handleSave = () => {
+  const loadApiKeys = async () => {
+    try {
+      setLoading(true);
+      const keys = await getApiKeys();
+      if (keys) {
+        setOpenAiKey(keys.openAiKey || "");
+        setUnsplashKey(keys.unsplashKey || "");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar chaves:", error);
+      toast.error("Erro ao carregar configurações");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
     if (!openAiKey || !unsplashKey) {
       toast.error("Por favor, forneça ambas as chaves API.");
       return;
     }
 
-    saveApiKeys(openAiKey, unsplashKey);
-    toast.success("Chaves API salvas com sucesso!");
+    try {
+      setLoading(true);
+      await saveApiKeys(openAiKey, unsplashKey);
+      toast.success("Chaves API salvas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao salvar chaves:", error);
+      toast.error("Erro ao salvar configurações");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,59 +82,80 @@ const Settings = () => {
       <div className="bg-white p-8 rounded-lg shadow-lg">
         <h2 className="text-2xl font-semibold mb-6">Chaves de API</h2>
         
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="openAiKey">OpenAI API Key</Label>
-            <Input
-              id="openAiKey"
-              type="password"
-              value={openAiKey}
-              onChange={(e) => setOpenAiKey(e.target.value)}
-              placeholder="sk-..."
-            />
-            <p className="text-xs text-muted-foreground">
-              Obtenha sua chave em{" "}
-              <a 
-                href="https://platform.openai.com/api-keys" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-brand-purple hover:underline"
-              >
-                platform.openai.com/api-keys
-              </a>
+        {!user ? (
+          <div className="text-center py-6">
+            <p className="text-muted-foreground mb-4">
+              Faça login para gerenciar suas chaves de API de forma mais segura.
             </p>
+            <Button 
+              onClick={() => navigate("/auth")}
+              className="bg-gradient-to-r from-brand-purple to-brand-blue hover:opacity-90"
+            >
+              Fazer Login
+            </Button>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="unsplashKey">Unsplash API Key</Label>
-            <Input
-              id="unsplashKey"
-              type="password"
-              value={unsplashKey}
-              onChange={(e) => setUnsplashKey(e.target.value)}
-              placeholder="Sua chave Unsplash..."
-            />
-            <p className="text-xs text-muted-foreground">
-              Obtenha sua chave em{" "}
-              <a 
-                href="https://unsplash.com/developers" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-brand-purple hover:underline"
-              >
-                unsplash.com/developers
-              </a>
-            </p>
+        ) : (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="openAiKey">OpenAI API Key</Label>
+              <Input
+                id="openAiKey"
+                type="password"
+                value={openAiKey}
+                onChange={(e) => setOpenAiKey(e.target.value)}
+                placeholder="sk-..."
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Obtenha sua chave em{" "}
+                <a 
+                  href="https://platform.openai.com/api-keys" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-brand-purple hover:underline"
+                >
+                  platform.openai.com/api-keys
+                </a>
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="unsplashKey">Unsplash API Key</Label>
+              <Input
+                id="unsplashKey"
+                type="password"
+                value={unsplashKey}
+                onChange={(e) => setUnsplashKey(e.target.value)}
+                placeholder="Sua chave Unsplash..."
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Obtenha sua chave em{" "}
+                <a 
+                  href="https://unsplash.com/developers" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-brand-purple hover:underline"
+                >
+                  unsplash.com/developers
+                </a>
+              </p>
+            </div>
+            
+            <Button 
+              onClick={handleSave}
+              className="w-full bg-gradient-to-r from-brand-purple to-brand-blue hover:opacity-90"
+              disabled={loading}
+            >
+              {loading ? "Salvando..." : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar Configurações
+                </>
+              )}
+            </Button>
           </div>
-          
-          <Button 
-            onClick={handleSave}
-            className="w-full bg-gradient-to-r from-brand-purple to-brand-blue hover:opacity-90"
-          >
-            <Save className="mr-2 h-4 w-4" />
-            Salvar Configurações
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   );

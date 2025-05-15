@@ -17,24 +17,40 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted, onBack }) =>
   const { toast } = useToast();
   const [openAiKey, setOpenAiKey] = useState("");
   const [unsplashKey, setUnsplashKey] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Verificar se já temos as chaves armazenadas
-    const storedKeys = getApiKeys();
-    if (storedKeys) {
-      setOpenAiKey(storedKeys.openAiKey);
-      setUnsplashKey(storedKeys.unsplashKey);
-    }
+    const loadKeys = async () => {
+      try {
+        setLoading(true);
+        const storedKeys = await getApiKeys();
+        if (storedKeys) {
+          setOpenAiKey(storedKeys.openAiKey || "");
+          setUnsplashKey(storedKeys.unsplashKey || "");
+        }
+      } catch (error) {
+        console.error("Erro ao carregar chaves:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadKeys();
   }, []);
 
   useEffect(() => {
     // Automaticamente usar as chaves armazenadas quando disponíveis
-    if (hasApiKeys()) {
-      const keys = getApiKeys();
-      if (keys) {
-        onKeysSubmitted(keys.openAiKey, keys.unsplashKey);
+    const checkForKeys = async () => {
+      if (await hasApiKeys()) {
+        const keys = await getApiKeys();
+        if (keys) {
+          onKeysSubmitted(keys.openAiKey, keys.unsplashKey);
+        }
       }
-    }
+    };
+    
+    checkForKeys();
   }, [onKeysSubmitted]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,6 +67,14 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted, onBack }) =>
     
     onKeysSubmitted(openAiKey, unsplashKey);
   };
+
+  if (loading) {
+    return (
+      <div className="w-full max-w-3xl animate-fade-in flex items-center justify-center p-8">
+        <p className="text-muted-foreground">Carregando configurações...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-3xl animate-fade-in">

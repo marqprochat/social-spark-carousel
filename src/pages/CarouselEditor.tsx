@@ -5,14 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CarouselCreator from "@/components/CarouselCreator";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
+import { getApiKeys } from "@/utils/apiKeys";
 
 const CarouselEditor = () => {
   const { carouselId } = useParams<{ carouselId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
-  const [openAiKey, setOpenAiKey] = useState<string>(""); // Default to empty string
-  const [unsplashKey, setUnsplashKey] = useState<string>(""); // Default to empty string
+  const [openAiKey, setOpenAiKey] = useState<string>(""); 
+  const [unsplashKey, setUnsplashKey] = useState<string>("");
 
   useEffect(() => {
     const checkSession = async () => {
@@ -23,6 +24,13 @@ const CarouselEditor = () => {
           toast.error("Por favor, faça login para continuar");
           navigate("/auth");
           return;
+        }
+        
+        // Carregar chaves de API
+        const apiKeys = await getApiKeys();
+        if (apiKeys) {
+          setOpenAiKey(apiKeys.openAiKey || "");
+          setUnsplashKey(apiKeys.unsplashKey || "");
         }
         
         fetchCarouselData();
@@ -80,9 +88,6 @@ const CarouselEditor = () => {
       
       setBusinessInfo(businessInfo);
       
-      // Use default API keys - in a production app, these should come from environment variables or user input
-      setOpenAiKey("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");
-      setUnsplashKey("RVUlxz_ETHc9NYACK2p-IBvifYTSypK_GoYWN-Ee-KE");
     } catch (error) {
       console.error("Error fetching carousel data:", error);
       toast.error("Erro ao carregar dados do carrossel");
