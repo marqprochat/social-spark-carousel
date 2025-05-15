@@ -1,10 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Settings } from "lucide-react";
+import { getApiKeys, hasApiKeys } from "@/utils/apiKeys";
+import { Link } from "react-router-dom";
 
 interface ApiKeyInputProps {
   onKeysSubmitted: (openAiKey: string, unsplashKey: string) => void;
@@ -15,6 +17,25 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted, onBack }) =>
   const { toast } = useToast();
   const [openAiKey, setOpenAiKey] = useState("");
   const [unsplashKey, setUnsplashKey] = useState("");
+
+  useEffect(() => {
+    // Verificar se já temos as chaves armazenadas
+    const storedKeys = getApiKeys();
+    if (storedKeys) {
+      setOpenAiKey(storedKeys.openAiKey);
+      setUnsplashKey(storedKeys.unsplashKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Automaticamente usar as chaves armazenadas quando disponíveis
+    if (hasApiKeys()) {
+      const keys = getApiKeys();
+      if (keys) {
+        onKeysSubmitted(keys.openAiKey, keys.unsplashKey);
+      }
+    }
+  }, [onKeysSubmitted]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +71,15 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onKeysSubmitted, onBack }) =>
           </Button>
         )}
 
-        <h2 className="text-2xl font-semibold mb-6">Chaves de API</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold">Chaves de API</h2>
+          <Link to="/settings">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Settings size={16} />
+              Configurar
+            </Button>
+          </Link>
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
