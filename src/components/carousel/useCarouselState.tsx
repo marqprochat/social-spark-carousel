@@ -64,32 +64,96 @@ export const useCarouselState = ({
       // Generate better AI search terms based on business context
       const aiSearchTerm = `${businessInfo.businessName} ${businessInfo.industry} ${businessInfo.postObjective} ${businessInfo.tone} professional marketing images`;
       
-      const [fetchedImages, generatedTexts] = await Promise.all([
-        searchImages({ 
-          businessInfo, 
-          accessKey: unsplashKey,
-          searchQuery: aiSearchTerm
-        }),
-        generateCarouselContent({ businessInfo, apiKey: openAiKey, numSlides: 5 }),
-      ]);
+      // First, generate the text content
+      const generatedTexts = await generateCarouselContent({ 
+        businessInfo, 
+        apiKey: openAiKey, 
+        numSlides: 5 
+      });
       
-      if (fetchedImages.length === 0 || generatedTexts.length === 0) {
+      if (generatedTexts.length === 0) {
         toast.dismiss("ai-generation");
-        throw new Error("Não foi possível obter recursos suficientes");
+        throw new Error("Não foi possível gerar textos para o carrossel");
       }
       
-      setImages(fetchedImages);
-      
-      // When initializing slides, make sure they use the fixed sizes
-      const newSlides = initializeSlides(generatedTexts, fetchedImages).map(slide => ({
-        ...slide,
-        images: slide.images.map(img => ({
-          ...img,
-          size: { width: 30, height: 30 }
-        }))
+      // Initialize slides with empty image arrays first
+      const initialSlides = generatedTexts.map((text, index) => ({
+        id: uuidv4(),
+        textBoxes: [
+          {
+            id: uuidv4(),
+            text: text,
+            position: { x: 50, y: 50 },
+            style: {
+              color: "#ffffff",
+              fontSize: "24px",
+              fontFamily: "roboto",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              padding: "10px"
+            }
+          }
+        ],
+        backgroundColor: "#f5f5f5",
+        backgroundImageOpacity: 1,
+        backgroundImage: null,
+        images: []
       }));
       
-      setSlides(newSlides);
+      setSlides(initialSlides);
+      
+      // For each slide text, find relevant images
+      const slideImages = await Promise.all(
+        generatedTexts.map(async (slideText) => {
+          try {
+            // Use the text of each slide to find relevant images
+            return await searchImages({ 
+              businessInfo, 
+              accessKey: unsplashKey,
+              searchQuery: `${businessInfo.businessName} ${slideText.substring(0, 50)}`,
+              slideText: slideText
+            });
+          } catch (error) {
+            console.error("Error finding images for slide:", error);
+            // Fallback to general images if specific search fails
+            return searchImages({ 
+              businessInfo, 
+              accessKey: unsplashKey,
+              searchQuery: aiSearchTerm
+            });
+          }
+        })
+      );
+      
+      // Combine all images for the image panel
+      const allImages = slideImages.flat();
+      setImages(allImages);
+      
+      // Update each slide with its specific images
+      const updatedSlides = initialSlides.map((slide, index) => {
+        const slideSpecificImages = slideImages[index] || [];
+        
+        // Add 1-2 relevant images from the slideSpecificImages to this slide
+        const slideImageObjects = slideSpecificImages.slice(0, 2).map((image, imgIndex) => ({
+          id: uuidv4(),
+          image: image,
+          position: { x: imgIndex === 0 ? 30 : 70, y: 65 },  // Position images at different spots
+          size: { width: 30, height: 30 },
+          opacity: 1,
+          filter: "none",
+          zIndex: 1
+        }));
+        
+        // Set the first image as the background if available
+        const updatedSlide = {
+          ...slide,
+          backgroundImage: slideSpecificImages[0] || null,
+          images: slideImageObjects
+        };
+        
+        return updatedSlide;
+      });
+      
+      setSlides(updatedSlides);
       toast.success("Carrossel criado com IA!", { id: "ai-generation" });
     } catch (error) {
       console.error("Erro ao inicializar carrossel:", error);
@@ -148,11 +212,14 @@ export const useCarouselState = ({
       setIsLoading(true);
       toast.loading("Buscando imagens...");
       
-      // Enrich the search query with business context for better AI-driven results
+      // Get the current slide's text for more relevant images
+      const currentSlideText = slides[currentSlideIndex]?.textBoxes[0]?.text || "";
+      
+      // Enrich the search query with business context and slide text
       let enhancedQuery = searchTerm;
       
       if (!enhancedQuery && businessInfo) {
-        enhancedQuery = `${businessInfo.businessName} ${businessInfo.industry} ${businessInfo.postObjective || ""} images`;
+        enhancedQuery = `${businessInfo.businessName} ${businessInfo.industry} ${currentSlideText.substring(0, 50)} ${businessInfo.postObjective || ""} images`;
       }
       
       const newBusinessInfo = {
@@ -163,7 +230,8 @@ export const useCarouselState = ({
       const fetchedImages = await searchImages({
         businessInfo: newBusinessInfo,
         accessKey: unsplashKey,
-        searchQuery: enhancedQuery
+        searchQuery: enhancedQuery,
+        slideText: currentSlideText
       });
       
       if (fetchedImages.length === 0) {

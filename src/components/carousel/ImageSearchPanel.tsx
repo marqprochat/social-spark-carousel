@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ interface ImageSearchPanelProps {
   isLoading: boolean;
   businessInfo?: any;
   carouselDescription?: string;
+  slideText?: string; // Added to connect images with text
 }
 
 const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
@@ -20,7 +20,8 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
   handleSearchImages,
   isLoading,
   businessInfo,
-  carouselDescription
+  carouselDescription,
+  slideText
 }) => {
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -41,11 +42,20 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
         objective: businessInfo.postObjective || "",
         tone: businessInfo.tone || "",
         additionalInfo: businessInfo.additionalInfo || "",
-        carouselDescription: carouselDescription || ""
+        carouselDescription: carouselDescription || "",
+        slideText: slideText || "" // Use the current slide's text for more relevant images
       };
 
-      // Generate a comprehensive search term based on all business context
-      const searchSuggestion = `${context.businessName} ${context.industry} ${context.objective} ${context.tone} professional high quality marketing images for ${context.targetAudience}`.trim();
+      // Generate a more targeted search term based on all context
+      let searchSuggestion = "";
+      
+      if (slideText) {
+        // If we have specific slide text, use it to find a related image
+        searchSuggestion = `${context.businessName} ${context.industry} ${slideText.substring(0, 60)} high quality professional images`;
+      } else {
+        // Otherwise use general business context
+        searchSuggestion = `${context.businessName} ${context.industry} ${context.objective} ${context.tone} professional high quality marketing images for ${context.targetAudience}`.trim();
+      }
       
       setAiSuggestion(searchSuggestion);
       setSearchTerm(searchSuggestion);
@@ -69,7 +79,7 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
     if (businessInfo && !searchTerm && !aiSuggestion) {
       generateAISearchTerm();
     }
-  }, [businessInfo]);
+  }, [businessInfo, slideText]); // Added slideText dependency to regenerate when text changes
 
   return (
     <div className="space-y-2">

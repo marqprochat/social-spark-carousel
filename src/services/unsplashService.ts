@@ -27,6 +27,7 @@ interface SearchImagesProps {
   accessKey?: string;
   perPage?: number;
   searchQuery?: string;
+  slideText?: string; // Add this to allow searching based on slide text
 }
 
 // Mapeamento de segmentos para termos de busca mais relevantes
@@ -54,6 +55,7 @@ export async function searchImages({
   accessKey = DEFAULT_ACCESS_KEY,
   perPage = 30,
   searchQuery: customQuery,
+  slideText,
 }: SearchImagesProps): Promise<UnsplashImage[]> {
   if (!accessKey) {
     toast.error("Por favor, forneça uma chave de acesso válida da Unsplash.");
@@ -65,6 +67,19 @@ export async function searchImages({
     
     // Construir uma query mais relevante baseada nas informações do negócio
     let searchTerms: string[] = [];
+    
+    // Se temos texto específico de um slide, priorizá-lo na busca
+    if (slideText) {
+      // Extrair palavras-chave do texto do slide (até 5 palavras relevantes)
+      const keywords = slideText
+        .split(/\s+/)
+        .filter(word => word.length > 4)
+        .slice(0, 5);
+      
+      if (keywords.length > 0) {
+        searchTerms = [...searchTerms, ...keywords];
+      }
+    }
     
     // Adicionar termos específicos com base no segmento do negócio
     if (businessInfo.industry) {

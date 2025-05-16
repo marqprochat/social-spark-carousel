@@ -1,13 +1,12 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Type, Image } from "lucide-react";
-import TextEditorPanel from "./TextEditorPanel";
-import { ImageEditorTab } from "@/components/CarouselCreatorExtension";
-import { Slide } from "@/components/CarouselCreatorExtension";
+import TextStylePanel from "./TextStylePanel";
+import BackgroundPanel from "./BackgroundPanel";
+import ImageStylePanel from "./ImageStylePanel";
+import ImageSearchPanel from "./ImageSearchPanel";
 import { UnsplashImage } from "@/services/unsplashService";
-import { SlideImageData } from "@/components/SlideImages";
-import ImageEditor from "@/components/ImageEditor";
+import { Slide } from "@/components/CarouselCreatorExtension";
+import ImagesPanel from "./ImagesPanel";
 
 interface EditorTabsProps {
   currentSlide: Slide;
@@ -76,22 +75,22 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
   removeBackgroundImage,
   updateSlideImage
 }) => {
+  const [activeTab, setActiveTab] = useState("text");
+  
+  // Get current slide text for better image search context
+  const currentSlideText = currentSlide?.textBoxes[0]?.text || "";
+
   return (
-    <Tabs defaultValue="text" className="w-full">
-      <TabsList className="w-full">
-        <TabsTrigger value="text" className="w-1/3">
-          <Type className="h-4 w-4 mr-2" /> Texto
-        </TabsTrigger>
-        <TabsTrigger value="image" className="w-1/3">
-          <Image className="h-4 w-4 mr-2" /> Imagem
-        </TabsTrigger>
-        <TabsTrigger value="background" className="w-1/3">
-          Plano de Fundo
-        </TabsTrigger>
+    <Tabs defaultValue="text" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+      <TabsList className="grid grid-cols-4 mb-4">
+        <TabsTrigger value="text">Texto</TabsTrigger>
+        <TabsTrigger value="background">Fundo</TabsTrigger>
+        <TabsTrigger value="image" disabled={!selectedImageId}>Imagem</TabsTrigger>
+        <TabsTrigger value="images">Imagens</TabsTrigger>
       </TabsList>
       
       <TabsContent value="text" className="space-y-4">
-        <TextEditorPanel 
+        <TextStylePanel 
           selectedTextBoxId={selectedTextBoxId}
           currentTextColor={currentTextColor}
           currentFontSize={currentFontSize}
@@ -106,30 +105,9 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
         />
       </TabsContent>
       
-      <TabsContent value="image" className="space-y-4">
-        {currentSlide && (
-          <ImageEditorTab
-            currentSlide={currentSlide}
-            selectedImageId={selectedImageId}
-            imageFilter={imageFilter}
-            imageSize={imageSize}
-            imageOpacity={imageOpacity}
-            onFilterChange={handleImageFilterChange}
-            onSizeChange={handleImageSizeChange}
-            onOpacityChange={handleImageOpacityChange}
-            onAddImage={handleAddImage}
-            onArrangeImage={handleArrangeImage}
-            images={images}
-            isLoading={isLoading}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            handleSearchImages={handleSearchImages}
-          />
-        )}
-      </TabsContent>
-      
-      <TabsContent value="background" className="space-y-4">
-        <ImageEditor
+      <TabsContent value="background">
+        <BackgroundPanel
+          currentSlide={currentSlide}
           currentSlideImage={currentSlide?.backgroundImage || null}
           imageFilter="none"
           imageSize={{ width: 100, height: 100 }}
@@ -148,6 +126,46 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           handleSearchImages={handleSearchImages}
+        />
+      </TabsContent>
+      
+      <TabsContent value="image">
+        <ImageStylePanel
+          currentSlide={currentSlide}
+          selectedImageId={selectedImageId}
+          imageFilter={imageFilter}
+          imageSize={imageSize}
+          imageOpacity={imageOpacity}
+          onFilterChange={handleImageFilterChange}
+          onSizeChange={handleImageSizeChange}
+          onOpacityChange={handleImageOpacityChange}
+          onAddImage={handleAddImage}
+          onArrangeImage={handleArrangeImage}
+          images={images}
+          isLoading={isLoading}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          handleSearchImages={handleSearchImages}
+        />
+      </TabsContent>
+      
+      <TabsContent value="images" className="space-y-4">
+        <div className="mb-4">
+          <ImageSearchPanel 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            handleSearchImages={handleSearchImages}
+            isLoading={isLoading}
+            businessInfo={businessInfo}
+            slideText={currentSlideText} // Pass the current slide text for better search context
+          />
+        </div>
+        
+        <ImagesPanel 
+          images={images} 
+          onAddImage={handleAddImage} 
+          isLoading={isLoading} 
+          updateSlideImage={updateSlideImage}
         />
       </TabsContent>
     </Tabs>
