@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TextStylePanel from "./TextStylePanel";
@@ -7,6 +8,8 @@ import ImageSearchPanel from "./ImageSearchPanel";
 import { UnsplashImage } from "@/services/unsplashService";
 import { Slide } from "@/components/CarouselCreatorExtension";
 import ImagesPanel from "./ImagesPanel";
+import { SlideImageData } from "@/components/SlideImages";
+import { BusinessInfo } from "@/components/BusinessInfoForm";
 
 interface EditorTabsProps {
   currentSlide: Slide;
@@ -40,6 +43,7 @@ interface EditorTabsProps {
   updateBackgroundImageOpacity?: (opacity: number) => void;
   removeBackgroundImage?: () => void;
   updateSlideImage?: (image: UnsplashImage) => void;
+  businessInfo?: BusinessInfo; // Add businessInfo prop
 }
 
 const EditorTabs: React.FC<EditorTabsProps> = ({
@@ -73,7 +77,8 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
   backgroundImageOpacity,
   updateBackgroundImageOpacity,
   removeBackgroundImage,
-  updateSlideImage
+  updateSlideImage,
+  businessInfo // Add businessInfo to destructured props
 }) => {
   const [activeTab, setActiveTab] = useState("text");
   

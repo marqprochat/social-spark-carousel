@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useCarouselState } from "./carousel/useCarouselState";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
@@ -257,6 +256,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                   updateBackgroundImageOpacity={updateBackgroundImageOpacity}
                   removeBackgroundImage={removeBackgroundImage}
                   updateSlideImage={updateSlideImage}
+                  businessInfo={businessInfo} // Pass businessInfo to EditorTabs
                 />
               )}
             </div>
