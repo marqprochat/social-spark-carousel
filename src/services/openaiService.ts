@@ -1,20 +1,23 @@
 
+
 import { toast } from "sonner";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 
 const API_URL = "https://api.openai.com/v1/chat/completions";
-const DEFAULT_API_KEY = "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";
+const DEFAULT_API_KEY = "sk-proj-A7hlYKaOW4EzUkDMurLwDobCbpL_zrIPX-hQc7yOHcKU_vnqBO3PjRPxpgnULP0eDrqecvSFH1x6BZPIVKELUF38guol8tlL5LfVLYuC1RygA";
 
 interface GenerateTextProps {
   businessInfo: BusinessInfo;
   apiKey?: string;
   numSlides?: number;
+  carouselDescription?: string; // Nova propriedade para descrição do carrossel
 }
 
 export async function generateCarouselContent({
   businessInfo,
   apiKey = DEFAULT_API_KEY,
-  numSlides = 5
+  numSlides = 5,
+  carouselDescription = ""
 }: GenerateTextProps): Promise<string[]> {
   // Validar API key
   if (!apiKey) {
@@ -31,6 +34,7 @@ export async function generateCarouselContent({
       ${businessInfo.targetAudience ? `Público-alvo: ${businessInfo.targetAudience}` : ''}
       ${businessInfo.postObjective ? `Objetivo: ${businessInfo.postObjective}` : ''}
       ${businessInfo.tone ? `Tom de comunicação: ${businessInfo.tone}` : ''}
+      ${carouselDescription ? `Descrição do carrossel: ${carouselDescription}` : ''}
       ${businessInfo.additionalInfo ? `Informações adicionais: ${businessInfo.additionalInfo}` : ''}
       
       Os textos devem ser:
@@ -39,13 +43,19 @@ export async function generateCarouselContent({
       ${businessInfo.targetAudience ? '3. Direcionados especificamente ao público-alvo mencionado' : ''}
       ${businessInfo.postObjective ? '4. Focados no objetivo de marketing informado' : ''}
       ${businessInfo.tone ? '5. Adequados ao tom de comunicação solicitado' : ''}
+      ${carouselDescription ? '6. MUITO importantes: alinhados com a descrição do carrossel fornecida pelo usuário' : ''}
       
       IMPORTANTE: Cada texto deve ter no máximo 200 caracteres, ser direto e adequado para um slide único. 
       Formate cada texto como um item em uma lista, numerado de 1 a ${numSlides}.
       Não inclua títulos, hashtags ou introduções, apenas os textos numerados para cada slide.
+      
+      LEMBRE-SE: Se uma descrição do carrossel foi fornecida, esta é a informação MAIS IMPORTANTE para guiar o conteúdo dos textos.
     `;
 
-    console.log("Enviando requisição para OpenAI com prompt refinado");
+    console.log("Enviando requisição para OpenAI com prompt refinado", { 
+      businessInfo, 
+      carouselDescription 
+    });
 
     const response = await fetch(API_URL, {
       method: "POST",
@@ -140,3 +150,4 @@ export async function generateCarouselContent({
     return [];
   }
 }
+

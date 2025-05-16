@@ -43,7 +43,8 @@ interface EditorTabsProps {
   updateBackgroundImageOpacity?: (opacity: number) => void;
   removeBackgroundImage?: () => void;
   updateSlideImage?: (image: UnsplashImage) => void;
-  businessInfo?: BusinessInfo; // Add businessInfo prop
+  businessInfo?: BusinessInfo; 
+  carouselDescription?: string; // Adiciona suporte à descrição do carrossel
 }
 
 const EditorTabs: React.FC<EditorTabsProps> = ({
@@ -78,7 +79,8 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
   updateBackgroundImageOpacity,
   removeBackgroundImage,
   updateSlideImage,
-  businessInfo // Add businessInfo to destructured props
+  businessInfo,
+  carouselDescription 
 }) => {
   const [activeTab, setActiveTab] = useState("text");
   
@@ -162,7 +164,8 @@ const EditorTabs: React.FC<EditorTabsProps> = ({
             handleSearchImages={handleSearchImages}
             isLoading={isLoading}
             businessInfo={businessInfo}
-            slideText={currentSlideText} // Pass the current slide text for better search context
+            carouselDescription={carouselDescription}
+            slideText={currentSlideText}
           />
         </div>
         

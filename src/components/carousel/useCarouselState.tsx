@@ -20,13 +20,15 @@ interface UseCarouselStateProps {
   openAiKey: string;
   unsplashKey: string;
   autoInitialize?: boolean;
+  carouselDescription?: string; // Nova propriedade
 }
 
 export const useCarouselState = ({ 
   businessInfo, 
   openAiKey, 
   unsplashKey,
-  autoInitialize = false
+  autoInitialize = false,
+  carouselDescription = "" // Parâmetro opcional com valor padrão
 }: UseCarouselStateProps) => {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -61,14 +63,17 @@ export const useCarouselState = ({
       setIsLoading(true);
       toast.loading("Gerando conteúdo com IA...", { id: "ai-generation" });
       
-      // Generate better AI search terms based on business context
-      const aiSearchTerm = `${businessInfo.businessName} ${businessInfo.industry} ${businessInfo.postObjective} ${businessInfo.tone} professional marketing images`;
+      // Gera termos de busca melhores baseados no contexto do negócio e descrição do carrossel
+      const aiSearchTerm = `${businessInfo.businessName} ${businessInfo.industry} ${carouselDescription ? carouselDescription.substring(0, 50) : ""} ${businessInfo.postObjective} ${businessInfo.tone} professional marketing images`;
       
-      // First, generate the text content
+      console.log("Inicializando carrossel com descrição:", carouselDescription);
+      
+      // First, generate the text content with carousel description
       const generatedTexts = await generateCarouselContent({ 
         businessInfo, 
         apiKey: openAiKey, 
-        numSlides: 5 
+        numSlides: 5,
+        carouselDescription // Passa a descrição para a geração de texto
       });
       
       if (generatedTexts.length === 0) {
@@ -101,16 +106,17 @@ export const useCarouselState = ({
       
       setSlides(initialSlides);
       
-      // For each slide text, find relevant images
+      // For each slide text, find relevant images using carousel description
       const slideImages = await Promise.all(
-        generatedTexts.map(async (slideText) => {
+        generatedTexts.map(async (slideText, index) => {
           try {
-            // Use the text of each slide to find relevant images
+            // Use the text of each slide to find relevant images, incluindo a descrição do carrossel
             return await searchImages({ 
               businessInfo, 
               accessKey: unsplashKey,
               searchQuery: `${businessInfo.businessName} ${slideText.substring(0, 50)}`,
-              slideText: slideText
+              slideText: slideText,
+              carouselDescription // Passa a descrição do carrossel
             });
           } catch (error) {
             console.error("Error finding images for slide:", error);
@@ -118,7 +124,8 @@ export const useCarouselState = ({
             return searchImages({ 
               businessInfo, 
               accessKey: unsplashKey,
-              searchQuery: aiSearchTerm
+              searchQuery: aiSearchTerm,
+              carouselDescription // Passa a descrição do carrossel mesmo no fallback
             });
           }
         })
@@ -171,7 +178,7 @@ export const useCarouselState = ({
     if (autoInitialize) {
       initializeCarousel();
     }
-  }, [autoInitialize, businessInfo, openAiKey, unsplashKey]);
+  }, [autoInitialize, businessInfo, openAiKey, unsplashKey, carouselDescription]);
   
   useEffect(() => {
     if (selectedTextBoxId) {
@@ -219,7 +226,7 @@ export const useCarouselState = ({
       let enhancedQuery = searchTerm;
       
       if (!enhancedQuery && businessInfo) {
-        enhancedQuery = `${businessInfo.businessName} ${businessInfo.industry} ${currentSlideText.substring(0, 50)} ${businessInfo.postObjective || ""} images`;
+        enhancedQuery = `${businessInfo.businessName} ${businessInfo.industry} ${currentSlideText.substring(0, 50)} ${carouselDescription ? carouselDescription.substring(0, 30) : ""} ${businessInfo.postObjective || ""} images`;
       }
       
       const newBusinessInfo = {
@@ -231,7 +238,8 @@ export const useCarouselState = ({
         businessInfo: newBusinessInfo,
         accessKey: unsplashKey,
         searchQuery: enhancedQuery,
-        slideText: currentSlideText
+        slideText: currentSlideText,
+        carouselDescription // Passa a descrição do carrossel
       });
       
       if (fetchedImages.length === 0) {
@@ -261,7 +269,8 @@ export const useCarouselState = ({
       const generatedTexts = await generateCarouselContent({
         businessInfo,
         apiKey: openAiKey,
-        numSlides: slides.length
+        numSlides: slides.length,
+        carouselDescription // Passa a descrição do carrossel
       });
       
       if (generatedTexts.length === 0) {
@@ -285,6 +294,30 @@ export const useCarouselState = ({
       
       setSlides(updatedSlides);
       toast.success("Textos gerados com sucesso!");
+      
+      // Buscar novas imagens relevantes para os novos textos
+      const slideImages = await Promise.all(
+        generatedTexts.map(async (slideText) => {
+          try {
+            return await searchImages({ 
+              businessInfo, 
+              accessKey: unsplashKey,
+              searchQuery: `${businessInfo.businessName} ${slideText.substring(0, 50)}`,
+              slideText: slideText,
+              carouselDescription // Passa a descrição do carrossel
+            });
+          } catch (error) {
+            console.error("Error finding images for new text:", error);
+            return [];
+          }
+        })
+      );
+      
+      const newAllImages = slideImages.flat();
+      if (newAllImages.length > 0) {
+        setImages(newAllImages);
+      }
+      
     } catch (error) {
       console.error("Erro ao gerar textos:", error);
       toast.error(error instanceof Error 

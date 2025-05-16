@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,17 +44,24 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
         tone: businessInfo.tone || "",
         additionalInfo: businessInfo.additionalInfo || "",
         carouselDescription: carouselDescription || "",
-        slideText: slideText || "" // Use the current slide's text for more relevant images
+        slideText: slideText || "" 
       };
 
       // Generate a more targeted search term based on all context
       let searchSuggestion = "";
       
       if (slideText) {
-        // If we have specific slide text, use it to find a related image
-        searchSuggestion = `${context.businessName} ${context.industry} ${slideText.substring(0, 60)} high quality professional images`;
+        // Se temos texto do slide, combiná-lo com descrição do carrossel e dados da empresa
+        const slideKeywords = slideText.substring(0, 60);
+        const descriptionKeywords = carouselDescription ? 
+          carouselDescription.substring(0, 30) : "";
+        
+        searchSuggestion = `${context.businessName} ${context.industry} ${descriptionKeywords} ${slideKeywords} high quality professional images`;
+      } else if (carouselDescription) {
+        // Se temos descrição do carrossel mas não texto específico
+        searchSuggestion = `${context.businessName} ${context.industry} ${carouselDescription.substring(0, 80)} professional high quality marketing images`;
       } else {
-        // Otherwise use general business context
+        // Caso contrário use contexto geral do negócio
         searchSuggestion = `${context.businessName} ${context.industry} ${context.objective} ${context.tone} professional high quality marketing images for ${context.targetAudience}`.trim();
       }
       
@@ -79,7 +87,7 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
     if (businessInfo && !searchTerm && !aiSuggestion) {
       generateAISearchTerm();
     }
-  }, [businessInfo, slideText]); // Added slideText dependency to regenerate when text changes
+  }, [businessInfo, slideText, carouselDescription]); // Added carouselDescription dependency
 
   return (
     <div className="space-y-2">

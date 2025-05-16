@@ -1,4 +1,3 @@
-
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 import { toast } from "sonner";
 
@@ -27,7 +26,8 @@ interface SearchImagesProps {
   accessKey?: string;
   perPage?: number;
   searchQuery?: string;
-  slideText?: string; // Add this to allow searching based on slide text
+  slideText?: string; // Texto do slide para busca contextualizada
+  carouselDescription?: string; // Descrição do carrossel
 }
 
 // Mapeamento de segmentos para termos de busca mais relevantes
@@ -56,6 +56,7 @@ export async function searchImages({
   perPage = 30,
   searchQuery: customQuery,
   slideText,
+  carouselDescription,
 }: SearchImagesProps): Promise<UnsplashImage[]> {
   if (!accessKey) {
     toast.error("Por favor, forneça uma chave de acesso válida da Unsplash.");
@@ -68,12 +69,25 @@ export async function searchImages({
     // Construir uma query mais relevante baseada nas informações do negócio
     let searchTerms: string[] = [];
     
-    // Se temos texto específico de um slide, priorizá-lo na busca
+    // Se temos descrição do carrossel, priorizá-la na busca
+    if (carouselDescription && carouselDescription.length > 10) {
+      // Extrair palavras-chave da descrição (até 5 palavras relevantes)
+      const descKeywords = carouselDescription
+        .split(/\s+/)
+        .filter(word => word.length > 4 && !['para', 'com', 'que', 'dos', 'das', 'uma', 'por', 'aos'].includes(word.toLowerCase()))
+        .slice(0, 5);
+      
+      if (descKeywords.length > 0) {
+        searchTerms = [...searchTerms, ...descKeywords];
+      }
+    }
+    
+    // Se temos texto específico de um slide, adicioná-lo à busca
     if (slideText) {
       // Extrair palavras-chave do texto do slide (até 5 palavras relevantes)
       const keywords = slideText
         .split(/\s+/)
-        .filter(word => word.length > 4)
+        .filter(word => word.length > 4 && !['para', 'com', 'que', 'dos', 'das', 'uma', 'por', 'aos'].includes(word.toLowerCase()))
         .slice(0, 5);
       
       if (keywords.length > 0) {
@@ -85,11 +99,6 @@ export async function searchImages({
     if (businessInfo.industry) {
       const industryTerms = industrySearchTerms[businessInfo.industry] || [businessInfo.industry];
       searchTerms = [...searchTerms, ...industryTerms];
-
-      // Se for automotivo, garantir termos específicos
-      if (businessInfo.industry === "Automotivo") {
-        searchTerms.push("carros", "automóveis", "oficina mecânica", "auto peças");
-      }
     }
     
     // Adicionar nome do negócio se não for muito genérico
@@ -116,15 +125,6 @@ export async function searchImages({
         .filter(word => word.length > 4)
         .slice(0, 2);
       searchTerms = [...searchTerms, ...objectiveKeywords];
-    }
-    
-    // Adicionar informações adicionais se disponíveis
-    if (businessInfo.additionalInfo && businessInfo.additionalInfo.length > 10) {
-      const additionalKeywords = businessInfo.additionalInfo
-        .split(' ')
-        .filter(word => word.length > 5)
-        .slice(0, 3);
-      searchTerms = [...searchTerms, ...additionalKeywords];
     }
     
     // Usar o termo de busca customizado se fornecido, ou construir um com os termos mais relevantes
@@ -158,23 +158,18 @@ export async function searchImages({
       // Tentar novamente com uma busca mais genérica se não houver resultados
       if (!customQuery) {
         console.log("Nenhum resultado encontrado. Tentando busca mais genérica...");
-        // Para setores específicos, usar termos de busca mais genéricos
-        if (businessInfo.industry === "Automotivo") {
-          return searchImages({
-            businessInfo,
-            accessKey,
-            perPage,
-            searchQuery: "cars automotive vehicles"
-          });
-        } else {
-          // Usar apenas a indústria como termo de busca
-          return searchImages({
-            businessInfo,
-            accessKey,
-            perPage,
-            searchQuery: businessInfo.industry
-          });
+        // Usar apenas a indústria e algumas palavras-chave da descrição
+        let fallbackQuery = businessInfo.industry;
+        if (carouselDescription) {
+          const mainWords = carouselDescription.split(' ').slice(0, 3).join(' ');
+          fallbackQuery = `${fallbackQuery} ${mainWords}`;
         }
+        return searchImages({
+          businessInfo,
+          accessKey,
+          perPage,
+          searchQuery: fallbackQuery
+        });
       }
       throw new Error("Nenhuma imagem encontrada para a busca");
     }

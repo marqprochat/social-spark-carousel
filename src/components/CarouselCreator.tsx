@@ -22,6 +22,7 @@ interface CarouselCreatorProps {
   openAiKey: string;
   unsplashKey: string;
   onBack: () => void;
+  carouselDescription?: string; // Nova propriedade para descrição do carrossel
 }
 
 const CarouselCreator: React.FC<CarouselCreatorProps> = ({
@@ -29,11 +30,12 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   openAiKey,
   unsplashKey,
   onBack,
+  carouselDescription = "" // Valor padrão vazio
 }) => {
   const navigate = useNavigate();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [projectName, setProjectName] = useState("");
-  const [projectDescription, setProjectDescription] = useState("");
+  const [projectDescription, setProjectDescription] = useState(carouselDescription || ""); // Usa a descrição do carrossel como valor inicial
   const [isSaving, setIsSaving] = useState(false);
   
   const {
@@ -94,7 +96,8 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
     businessInfo, 
     openAiKey, 
     unsplashKey,
-    autoInitialize: true 
+    autoInitialize: true,
+    carouselDescription // Passa a descrição do carrossel
   });
 
   const handleSaveToProject = async () => {
@@ -144,7 +147,7 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
         .insert({
           project_id: projectData.id,
           title: `Carrossel de ${businessInfo.businessName}`,
-          description: `Gerado em ${new Date().toLocaleDateString()}`,
+          description: projectDescription || `Gerado em ${new Date().toLocaleDateString()}`,
           slides: slidesJson
         });
 
@@ -256,7 +259,8 @@ const CarouselCreator: React.FC<CarouselCreatorProps> = ({
                   updateBackgroundImageOpacity={updateBackgroundImageOpacity}
                   removeBackgroundImage={removeBackgroundImage}
                   updateSlideImage={updateSlideImage}
-                  businessInfo={businessInfo} // Pass businessInfo to EditorTabs
+                  businessInfo={businessInfo} 
+                  carouselDescription={carouselDescription} // Passa a descrição do carrossel
                 />
               )}
             </div>

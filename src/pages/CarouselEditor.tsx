@@ -14,6 +14,7 @@ const CarouselEditor = () => {
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [openAiKey, setOpenAiKey] = useState<string>(""); 
   const [unsplashKey, setUnsplashKey] = useState<string>("");
+  const [carouselDescription, setCarouselDescription] = useState<string>(""); // Adicionar estado para a descrição
 
   useEffect(() => {
     const checkSession = async () => {
@@ -76,6 +77,10 @@ const CarouselEditor = () => {
       
       console.log("Carousel data:", carouselData);
       
+      // Extrair a descrição do carrossel, se disponível
+      const description = carouselData.description || "";
+      setCarouselDescription(description);
+      
       // Extract business info from the carousel data
       const businessInfo: BusinessInfo = {
         businessName: carouselData.project.business_info.business_name,
@@ -132,6 +137,7 @@ const CarouselEditor = () => {
         openAiKey={openAiKey}
         unsplashKey={unsplashKey}
         onBack={handleBack}
+        carouselDescription={carouselDescription} // Passa a descrição para o componente CarouselCreator
       />
     </div>
   );
