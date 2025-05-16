@@ -30,7 +30,11 @@ export const saveApiKeys = async (openAiKey: string, unsplashKey: string): Promi
         // Atualizar chaves existentes
         await supabase
           .from('api_keys')
-          .update({ openai_key: openAiKey, unsplash_key: unsplashKey, updated_at: new Date() })
+          .update({ 
+            openai_key: openAiKey, 
+            unsplash_key: unsplashKey, 
+            updated_at: new Date().toISOString() // Convertendo Date para string
+          })
           .eq('user_id', session.user.id);
       } else {
         // Inserir novas chaves

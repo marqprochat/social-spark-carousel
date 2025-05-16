@@ -39,7 +39,8 @@ const TextBox: React.FC<TextBoxProps> = ({
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [localText, setLocalText] = useState(text);
-  const [size, setSize] = useState({ width: 'auto', height: 'auto' });
+  // Default fixed size for text boxes
+  const [size, setSize] = useState({ width: '250px', height: 'auto' });
   const textBoxRef = useRef<HTMLDivElement>(null);
   const textContentRef = useRef<HTMLDivElement>(null);
   const resizingRef = useRef<string | null>(null);
@@ -106,7 +107,7 @@ const TextBox: React.FC<TextBoxProps> = ({
     }
     
     // Minimum size constraints
-    const minWidth = 100;
+    const minWidth = 250; // Default fixed width for text boxes
     const minHeight = 50;
     
     setSize({
@@ -197,7 +198,7 @@ const TextBox: React.FC<TextBoxProps> = ({
         transition: "box-shadow 0.2s ease",
         boxShadow: isSelected ? "0 0 0 2px rgba(147, 51, 234, 0.5)" : "none",
         overflow: "visible",
-        minWidth: "100px",
+        minWidth: "250px", // Fixed standard width
         minHeight: "50px",
         cursor: isEditing ? "text" : "move",
       }}

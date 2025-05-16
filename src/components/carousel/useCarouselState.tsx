@@ -40,7 +40,8 @@ export const useCarouselState = ({
   
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [imageFilter, setImageFilter] = useState("none");
-  const [imageSize, setImageSize] = useState({ width: 80, height: 80 });
+  // Set fixed default image size
+  const [imageSize, setImageSize] = useState({ width: 30, height: 30 });
   const [imageOpacity, setImageOpacity] = useState(1);
   
   const [currentTextColor, setCurrentTextColor] = useState("#ffffff");
@@ -79,7 +80,14 @@ export const useCarouselState = ({
       
       setImages(fetchedImages);
       
-      const newSlides = initializeSlides(generatedTexts, fetchedImages);
+      // When initializing slides, make sure they use the fixed sizes
+      const newSlides = initializeSlides(generatedTexts, fetchedImages).map(slide => ({
+        ...slide,
+        images: slide.images.map(img => ({
+          ...img,
+          size: { width: 30, height: 30 }
+        }))
+      }));
       
       setSlides(newSlides);
       toast.success("Carrossel criado com IA!", { id: "ai-generation" });
@@ -227,7 +235,12 @@ export const useCarouselState = ({
   };
 
   const handleAddImage = (imageData: SlideImageData) => {
-    setSlides(addImageToSlide(slides, currentSlideIndex, imageData));
+    // Set default fixed size when adding a new image
+    const imageWithDefaultSize = {
+      ...imageData,
+      size: { width: 30, height: 30 }
+    };
+    setSlides(addImageToSlide(slides, currentSlideIndex, imageWithDefaultSize));
   };
 
   const handleUpdateImage = (imageId: string, updates: Partial<SlideImageData>) => {

@@ -117,6 +117,13 @@ export const SlideImage: React.FC<SlideImageProps> = ({
     ));
   };
 
+  // Default fixed size for images - set to 30% of slide canvas width
+  const defaultImageSize = { width: 30, height: 30 };
+  const actualSize = {
+    width: size.width === 0 ? defaultImageSize.width : size.width,
+    height: size.height === 0 ? defaultImageSize.height : size.height
+  };
+
   return (
     <div
       ref={imageRef}
@@ -124,8 +131,8 @@ export const SlideImage: React.FC<SlideImageProps> = ({
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
-        width: `${size.width}%`,
-        height: `${size.height}%`,
+        width: `${actualSize.width}%`,
+        height: `${actualSize.height}%`,
         transform: "translate(-50%, -50%)",
         opacity,
         zIndex,
