@@ -103,61 +103,59 @@ export const useCarouselState = ({
       
       setSlides(initialSlides);
       
-      // For each slide text, find relevant images using carousel description
-      const slideImages = await Promise.all(
-        generatedTexts.map(async (slideText, index) => {
+      // Buscar imagens para cada slide individualmente
+      const updatedSlides = await Promise.all(
+        initialSlides.map(async (slide, index) => {
           try {
-            // Use the text of each slide to find relevant images, incluindo a descrição do carrossel
-            return await searchImages({ 
+            // Usar o texto específico de cada slide para buscar imagens relevantes
+            const slideText = generatedTexts[index];
+            
+            // Adicionar alguma aleatoriedade para evitar imagens duplicadas
+            const randomSuffix = Math.floor(Math.random() * 1000);
+            
+            // Criar uma query única para cada slide
+            const searchQuery = `${slideText.substring(0, 50)} ${businessInfo.industry} ${randomSuffix}`;
+            
+            const slideImages = await searchImages({ 
               businessInfo, 
               accessKey: unsplashKey,
-              searchQuery: `${businessInfo.businessName} ${slideText.substring(0, 50)}`,
-              slideText: slideText,
+              searchQuery,
+              slideText,
               carouselDescription
             });
+            
+            // Apenas definir a imagem de fundo se encontramos imagens
+            if (slideImages && slideImages.length > 0) {
+              return {
+                ...slide,
+                backgroundImage: slideImages[0] || null
+              };
+            }
+            
+            return slide;
           } catch (error) {
-            console.error("Error finding images for slide:", error);
-            // Fallback to general images if specific search fails
-            return searchImages({ 
-              businessInfo, 
-              accessKey: unsplashKey,
-              searchQuery: `${businessInfo.industry} ${carouselDescription}`,
-              carouselDescription
-            });
+            console.error(`Erro ao buscar imagens para o slide ${index}:`, error);
+            return slide;
           }
         })
       );
       
-      // Combine all images for the image panel
-      const allImages = slideImages.flat();
-      setImages(allImages);
-      
-      // Update each slide with its specific images
-      const updatedSlides = initialSlides.map((slide, index) => {
-        const slideSpecificImages = slideImages[index] || [];
-        
-        // Add ONLY 1 relevant image for each slide - fixing the issue of too many images
-        const slideImageObjects = slideSpecificImages.slice(0, 1).map((image) => ({
-          id: uuidv4(),
-          image: image,
-          position: { x: 50, y: 65 },  // Position image in center bottom
-          size: { width: 30, height: 30 },
-          opacity: 1,
-          filter: "none",
-          zIndex: 1
-        }));
-        
-        // Set the first image as the background if available
-        const updatedSlide = {
-          ...slide,
-          backgroundImage: slideSpecificImages[0] || null,
-          images: slideImageObjects
-        };
-        
-        return updatedSlide;
-      });
-      
       setSlides(updatedSlides);
+      
+      // Buscar imagens gerais para o painel de imagens
+      try {
+        const allImages = await searchImages({ 
+          businessInfo, 
+          accessKey: unsplashKey,
+          searchQuery: `${businessInfo.industry} ${carouselDescription}`,
+          carouselDescription
+        });
+        
+        setImages(allImages);
+      } catch (error) {
+        console.error("Erro ao buscar imagens gerais:", error);
+      }
+      
       toast.success("Carrossel criado com IA!", { id: "ai-generation" });
     } catch (error) {
       console.error("Erro ao inicializar carrossel:", error);
@@ -219,12 +217,13 @@ export const useCarouselState = ({
       // Get the current slide's text for more relevant images
       const currentSlideText = slides[currentSlideIndex]?.textBoxes[0]?.text || "";
       
-      // Enrich the search query with business context and slide text
+      // Enrich the search query with slide text and business context
       let enhancedQuery = searchTerm;
       
-      if (!enhancedQuery && businessInfo) {
-        // Priorizar a descrição do carrossel e o texto do slide atual
-        enhancedQuery = `${currentSlideText.substring(0, 50)} ${carouselDescription ? carouselDescription.substring(0, 50) : ""} ${businessInfo.businessName} ${businessInfo.industry}`;
+      if (!enhancedQuery && currentSlideText) {
+        // Adicionar aleatoriedade para evitar imagens duplicadas
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        enhancedQuery = `${currentSlideText.substring(0, 50)} ${randomSuffix}`;
       }
       
       const fetchedImages = await searchImages({
@@ -329,6 +328,9 @@ export const useCarouselState = ({
       const slideToUpdate = { ...newSlides[currentSlideIndex] };
       
       slideToUpdate.backgroundImage = image;
+      // Garantir que não temos imagens soltas
+      slideToUpdate.images = [];
+      
       newSlides[currentSlideIndex] = slideToUpdate;
       
       return newSlides;

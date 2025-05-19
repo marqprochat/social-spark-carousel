@@ -69,6 +69,46 @@ function extractKeywords(text: string): string[] {
     .slice(0, 6); // Limitar para as 6 palavras mais relevantes
 }
 
+// Função para obter temas relacionados ao texto do slide
+function getThemeSpecificTerms(slideText: string): string[] {
+  if (!slideText) return [];
+  
+  const cleanText = slideText.toLowerCase();
+  const themes = [];
+  
+  // Detectar temas específicos no texto do slide
+  if (cleanText.includes('férias')) themes.push('férias', 'viagem', 'vacation');
+  if (cleanText.includes('segurança')) themes.push('segurança veicular', 'vehicle safety');
+  if (cleanText.includes('família')) themes.push('família', 'family car');
+  if (cleanText.includes('economia')) themes.push('economia', 'savings');
+  if (cleanText.includes('preocupações')) themes.push('tranquilidade', 'peace of mind');
+  if (cleanText.includes('revisão')) themes.push('revisão de carro', 'vehicle inspection');
+  if (cleanText.includes('revisão prévia')) themes.push('checklist de viagem', 'car trip preparation');
+  if (cleanText.includes('manutenção')) themes.push('manutenção de carro', 'car maintenance');
+  if (cleanText.includes('óleo')) themes.push('troca de óleo', 'oil change');
+  if (cleanText.includes('motor')) themes.push('motor de carro', 'car engine');
+  if (cleanText.includes('preço') || cleanText.includes('justo')) themes.push('preço justo', 'fair price');
+  if (cleanText.includes('qualidade')) themes.push('serviço de qualidade', 'quality service');
+  if (cleanText.includes('garantida')) themes.push('garantia mecânica', 'warranty');
+  if (cleanText.includes('agende')) themes.push('agendamento de serviço', 'service appointment');
+  if (cleanText.includes('cuidado')) themes.push('cuidados com o carro', 'car care');
+  
+  // Adicionar um modificador visual para variar as imagens
+  const visualModifiers = [
+    'realistic photo', 
+    'professional photography',
+    'high quality image',
+    'colorful image',
+    'clear background'
+  ];
+  
+  // Selecionar um modificador aleatório para evitar imagens similares
+  const randomModifier = visualModifiers[Math.floor(Math.random() * visualModifiers.length)];
+  themes.push(randomModifier);
+  
+  return themes;
+}
+
 export async function searchImages({
   businessInfo,
   accessKey = DEFAULT_ACCESS_KEY,
@@ -85,122 +125,106 @@ export async function searchImages({
   try {
     console.log("Buscando imagens com a chave Unsplash:", accessKey.substring(0, 4) + "...");
     
-    // Construir uma query mais relevante baseada nas informações do slide e negócio
-    let searchTerms: string[] = [];
+    // 1. Usar a query personalizada se fornecida
+    if (customQuery) {
+      console.log("Usando query personalizada para busca de imagens:", customQuery);
+      
+      // Adicionar um identificador único para evitar resultados semelhantes
+      const timestamp = new Date().getTime();
+      const randomSeed = Math.floor(Math.random() * 1000);
+      const uniqueQuery = `${customQuery} ${timestamp % 5}${randomSeed % 10}`;
+      
+      const url = new URL(UNSPLASH_API_URL);
+      url.searchParams.append("query", uniqueQuery);
+      url.searchParams.append("per_page", perPage.toString());
+      url.searchParams.append("client_id", accessKey);
+      url.searchParams.append("orientation", "landscape"); 
+      url.searchParams.append("content_filter", "high");
+      url.searchParams.append("order_by", "relevant");
+      
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.errors?.[0] || "Erro ao buscar imagens");
+      }
+      
+      const data = await response.json();
+      
+      if (!data.results || data.results.length === 0) {
+        throw new Error("Nenhuma imagem encontrada para a busca");
+      }
+      
+      return data.results;
+    }
     
-    // 1. Prioridade máxima: Palavras-chave do texto do slide atual
-    if (slideText && slideText.length > 5) {
+    // 2. Criar query baseada no texto do slide atual
+    if (slideText) {
+      // Extrair palavras-chave do texto do slide
       const slideKeywords = extractKeywords(slideText);
-      if (slideKeywords.length > 0) {
-        searchTerms = [...slideKeywords];
-      }
-    }
-    
-    // 2. Segunda prioridade: Informações sobre o tema específico baseado no texto
-    const themeSpecificTerms: string[] = [];
-    
-    // Verificar se o contexto é automotivo/mecânico
-    const isAutomotiveContext = 
-      (businessInfo.industry?.toLowerCase().includes('mecânica') || 
-       businessInfo.industry?.toLowerCase().includes('auto')) ||
-      (slideText?.toLowerCase().includes('óleo') || 
-       slideText?.toLowerCase().includes('revisão') ||
-       slideText?.toLowerCase().includes('motor') ||
-       slideText?.toLowerCase().includes('carro') ||
-       slideText?.toLowerCase().includes('veículo'));
-    
-    if (isAutomotiveContext) {
-      // Adicionar termos específicos baseados no contexto do slide
-      if (slideText?.toLowerCase().includes('óleo')) {
-        themeSpecificTerms.push('troca de óleo', 'oil change', 'motor oil');
-      } else if (slideText?.toLowerCase().includes('revisão')) {
-        themeSpecificTerms.push('revisão veicular', 'car maintenance');
-      } else if (slideText?.toLowerCase().includes('motor')) {
-        themeSpecificTerms.push('motor de carro', 'car engine');
-      } else if (slideText?.toLowerCase().includes('segurança')) {
-        themeSpecificTerms.push('segurança automotiva', 'car safety');
-      } else if (slideText?.toLowerCase().includes('manutenção')) {
-        themeSpecificTerms.push('manutenção automotiva', 'car repair');
-      } else {
-        themeSpecificTerms.push('oficina mecânica', 'auto service');
-      }
-    }
-    
-    // Adicionar os termos específicos do tema
-    searchTerms = [...searchTerms, ...themeSpecificTerms];
-    
-    // 3. Terceira prioridade: Descrição do carrossel
-    if (carouselDescription && carouselDescription.length > 5) {
-      const descKeywords = extractKeywords(carouselDescription)
-        .filter(word => !searchTerms.some(term => term.includes(word)));
       
-      if (descKeywords.length > 0) {
-        searchTerms = [...searchTerms, ...descKeywords.slice(0, 2)];
-      }
-    }
-    
-    // 4. Quarta prioridade: Informações do negócio
-    if (businessInfo.industry) {
-      const industryTerms = industrySearchTerms[businessInfo.industry] || [businessInfo.industry];
-      // Adicionar apenas termos que não são redundantes com o que já temos
-      const uniqueIndustryTerms = industryTerms
-        .filter(term => !searchTerms.some(existingTerm => 
-          existingTerm.includes(term) || term.includes(existingTerm)
-        ));
+      // Obter temas específicos relacionados ao conteúdo
+      const themeTerms = getThemeSpecificTerms(slideText);
       
-      searchTerms = [...searchTerms, ...uniqueIndustryTerms.slice(0, 1)];
-    }
-    
-    // 5. Nome do negócio (se não for muito genérico)
-    if (businessInfo.businessName && businessInfo.businessName.length > 3 &&
-        !searchTerms.some(term => term.includes(businessInfo.businessName))) {
-      searchTerms.push(businessInfo.businessName);
-    }
-    
-    // Usar o termo de busca customizado ou construir um com os termos mais relevantes
-    let searchQuery = customQuery || searchTerms.join(' ');
-    
-    // Adicionar termos que melhorem a qualidade visual das imagens
-    if (!searchQuery.includes("high quality")) {
-      searchQuery += " high quality professional";
-    }
-    
-    console.log("Palavras-chave para busca de imagens:", searchQuery);
-
-    const url = new URL(UNSPLASH_API_URL);
-    url.searchParams.append("query", searchQuery);
-    url.searchParams.append("per_page", perPage.toString());
-    url.searchParams.append("client_id", accessKey);
-    url.searchParams.append("orientation", "landscape"); 
-    url.searchParams.append("content_filter", "high");
-    url.searchParams.append("order_by", "relevant");
-
-    const response = await fetch(url.toString());
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.errors?.[0] || "Erro ao buscar imagens");
-    }
-
-    const data = await response.json();
-    
-    // Verificar se temos resultados antes de retornar
-    if (!data.results || data.results.length === 0) {
-      // Tentar novamente com uma busca mais genérica se não houver resultados
-      if (!customQuery && isAutomotiveContext) {
-        console.log("Nenhum resultado encontrado. Tentando busca mais genérica...");
-        let fallbackQuery = "car mechanic auto repair professional";
+      // Adicionar termos da indústria (com foco em mecânica de veículos)
+      const industryTerms = industrySearchTerms[businessInfo.industry] || 
+                           ["car mechanic", "auto repair", "vehicle service"];
+      
+      // Combinar tudo numa única query, priorizando o tema específico
+      const combinedQuery = [
+        ...themeTerms.slice(0, 3), 
+        ...slideKeywords.slice(0, 3),
+        ...industryTerms.slice(0, 1)
+      ].join(' ');
+      
+      // Adicionar um número aleatório para evitar resultados repetidos
+      const randomSuffix = Math.floor(Math.random() * 1000);
+      const finalQuery = `${combinedQuery} ${randomSuffix % 10}`;
+      
+      console.log("Query final para busca de imagens:", finalQuery);
+      
+      const url = new URL(UNSPLASH_API_URL);
+      url.searchParams.append("query", finalQuery);
+      url.searchParams.append("per_page", perPage.toString());
+      url.searchParams.append("client_id", accessKey);
+      url.searchParams.append("orientation", "landscape"); 
+      url.searchParams.append("content_filter", "high");
+      url.searchParams.append("order_by", "relevant");
+      
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.errors?.[0] || "Erro ao buscar imagens");
+      }
+      
+      const data = await response.json();
+      
+      if (!data.results || data.results.length === 0) {
+        // Tentar uma busca mais genérica como fallback
+        console.log("Nenhum resultado. Tentando busca genérica para a indústria...");
         return searchImages({
           businessInfo,
           accessKey,
           perPage,
-          searchQuery: fallbackQuery
+          searchQuery: `${businessInfo.industry} vehicle service ${Math.random().toString().slice(2, 5)}`
         });
       }
-      throw new Error("Nenhuma imagem encontrada para a busca");
+      
+      return data.results;
     }
     
-    return data.results;
+    // 3. Fallback: usar descrição do carrossel ou informações do negócio
+    const fallbackQuery = carouselDescription || 
+                         `${businessInfo.industry} ${businessInfo.businessName} vehicle service`;
+    
+    return searchImages({
+      businessInfo,
+      accessKey,
+      perPage,
+      searchQuery: fallbackQuery
+    });
+    
   } catch (error) {
     console.error("Erro ao buscar imagens:", error);
     toast.error(error instanceof Error ? error.message : "Erro ao buscar imagens");

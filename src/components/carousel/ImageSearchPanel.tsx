@@ -35,7 +35,7 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
 
     setIsGenerating(true);
     try {
-      // Extração de palavras-chave do texto do slide
+      // Identificar palavras-chave principais do texto
       const cleanText = slideText.replace(/[^\w\sÀ-ÿ]/gi, ' ').toLowerCase();
       const words = cleanText.split(/\s+/);
       
@@ -47,42 +47,50 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
         .filter(word => word.length > 3 && !stopWords.includes(word))
         .slice(0, 5); // Pegar até 5 palavras-chave
       
-      // Adicionar contexto específico de negócio
-      let contextTerms = [];
+      // Extrair temas específicos do slide
+      const themes = [];
       
-      if (businessInfo?.industry) {
-        // Detectar se é sobre mecânica/troca de óleo
-        if (businessInfo.industry.toLowerCase().includes('mecânica') || 
-            businessInfo.industry.toLowerCase().includes('auto') ||
-            slideText.toLowerCase().includes('óleo') ||
-            slideText.toLowerCase().includes('motor') ||
-            slideText.toLowerCase().includes('revisão') ||
-            slideText.toLowerCase().includes('veículo') ||
-            slideText.toLowerCase().includes('manutenção')) {
-          
-          // Adicionar termos específicos baseados no contexto do slide
-          if (slideText.toLowerCase().includes('óleo')) {
-            contextTerms.push('troca de óleo', 'oil change', 'motor oil', 'lubrificante');
-          } else if (slideText.toLowerCase().includes('revisão')) {
-            contextTerms.push('revisão veicular', 'car maintenance', 'check-up');
-          } else if (slideText.toLowerCase().includes('motor')) {
-            contextTerms.push('motor de carro', 'engine maintenance', 'car engine');
-          } else if (slideText.toLowerCase().includes('segurança')) {
-            contextTerms.push('segurança automotiva', 'car safety', 'car inspection');
-          } else {
-            contextTerms.push('oficina mecânica', 'car repair', 'auto service');
-          }
-        }
+      // Verificar temas específicos no texto do slide
+      if (cleanText.includes('férias')) themes.push('férias', 'viagem', 'vacation');
+      if (cleanText.includes('segurança')) themes.push('segurança veicular', 'vehicle safety');
+      if (cleanText.includes('família')) themes.push('família', 'family car');
+      if (cleanText.includes('economia')) themes.push('economia', 'savings');
+      if (cleanText.includes('preocupações')) themes.push('tranquilidade', 'peace of mind');
+      if (cleanText.includes('revisão')) themes.push('revisão de carro', 'vehicle inspection');
+      if (cleanText.includes('revisão prévia')) themes.push('checklist de viagem', 'car trip preparation');
+      if (cleanText.includes('manutenção')) themes.push('manutenção de carro', 'car maintenance');
+      if (cleanText.includes('óleo')) themes.push('troca de óleo', 'oil change');
+      if (cleanText.includes('motor')) themes.push('motor de carro', 'car engine');
+      if (cleanText.includes('preço') || cleanText.includes('justo')) themes.push('preço justo', 'fair price');
+      if (cleanText.includes('qualidade')) themes.push('serviço de qualidade', 'quality service');
+      if (cleanText.includes('garantida')) themes.push('garantia mecânica', 'warranty');
+      if (cleanText.includes('agende')) themes.push('agendamento de serviço', 'service appointment');
+      if (cleanText.includes('cuidado')) themes.push('cuidados com o carro', 'car care');
+      
+      // Se não encontramos temas específicos, usar contexto geral de oficina mecânica
+      if (themes.length === 0) {
+        const generalThemes = ['oficina mecânica', 'auto repair shop', 'car service'];
+        themes.push(...generalThemes);
       }
       
-      // Combinar palavras-chave do texto + contexto + termos gerais de qualidade
+      // Adicionar um modificador visual relacionado ao tipo de imagem que queremos
+      const imageTypes = [
+        'real photo', 
+        'professional photography', 
+        'clean background',
+        'colorful'
+      ];
+      const randomImageType = imageTypes[Math.floor(Math.random() * imageTypes.length)];
+      
+      // Combinar palavras-chave + temas específicos + tipo de imagem + contexto da empresa
       const searchKeywords = [
         ...keyWords, 
-        ...contextTerms,
+        ...themes.slice(0, 2), // Limitar a 2 temas para não sobrecarregar
+        randomImageType,
         businessInfo?.businessName || "",
-        "professional", 
-        "high quality"
       ].filter(Boolean).join(' ');
+      
+      console.log("Termos de busca gerados para o slide:", searchKeywords);
       
       setAiSuggestion(searchKeywords);
       setSearchTerm(searchKeywords);
