@@ -12,7 +12,7 @@ interface ImageSearchPanelProps {
   isLoading: boolean;
   businessInfo?: any;
   carouselDescription?: string;
-  slideText?: string; // Added to connect images with text
+  slideText?: string;
 }
 
 const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
@@ -47,23 +47,44 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
         slideText: slideText || "" 
       };
 
-      // Generate a more targeted search term based on all context
+      // Gerar termos de busca com foco em "troca de óleo" e "revisão" se for esse o tema
       let searchSuggestion = "";
       
+      // Verificar se é sobre troca de óleo ou revisão de veículos
+      const isAboutOilChange = carouselDescription?.toLowerCase().includes("troca de óleo") || 
+                               carouselDescription?.toLowerCase().includes("revisão") ||
+                               businessInfo.industry?.toLowerCase().includes("mecânica");
+
       if (slideText) {
         // Se temos texto do slide, combiná-lo com descrição do carrossel e dados da empresa
         const slideKeywords = slideText.substring(0, 60);
-        const descriptionKeywords = carouselDescription ? 
-          carouselDescription.substring(0, 30) : "";
         
-        searchSuggestion = `${context.businessName} ${context.industry} ${descriptionKeywords} ${slideKeywords} high quality professional images`;
+        searchSuggestion = `${slideKeywords} ${carouselDescription?.substring(0, 40) || ""} ${context.businessName} ${context.industry}`;
+        
+        // Adicionar termos específicos se for sobre troca de óleo
+        if (isAboutOilChange) {
+          searchSuggestion += " troca de óleo oficina mecânica revisão automotiva";
+        }
       } else if (carouselDescription) {
         // Se temos descrição do carrossel mas não texto específico
-        searchSuggestion = `${context.businessName} ${context.industry} ${carouselDescription.substring(0, 80)} professional high quality marketing images`;
+        searchSuggestion = `${context.businessName} ${carouselDescription.substring(0, 80)} ${context.industry}`;
+        
+        // Adicionar termos específicos se for sobre troca de óleo
+        if (isAboutOilChange) {
+          searchSuggestion += " troca de óleo oficina mecânica revisão automotiva";
+        }
       } else {
         // Caso contrário use contexto geral do negócio
-        searchSuggestion = `${context.businessName} ${context.industry} ${context.objective} ${context.tone} professional high quality marketing images for ${context.targetAudience}`.trim();
+        searchSuggestion = `${context.businessName} ${context.industry} ${context.objective || ""} ${context.tone || ""}`;
+        
+        // Adicionar termos específicos se for sobre troca de óleo
+        if (isAboutOilChange) {
+          searchSuggestion += " troca de óleo oficina mecânica revisão automotiva";
+        }
       }
+      
+      // Adicionar "high quality" para melhorar qualidade das imagens
+      searchSuggestion += " high quality professional";
       
       setAiSuggestion(searchSuggestion);
       setSearchTerm(searchSuggestion);
@@ -87,7 +108,7 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
     if (businessInfo && !searchTerm && !aiSuggestion) {
       generateAISearchTerm();
     }
-  }, [businessInfo, slideText, carouselDescription]); // Added carouselDescription dependency
+  }, [businessInfo, slideText, carouselDescription]);
 
   return (
     <div className="space-y-2">

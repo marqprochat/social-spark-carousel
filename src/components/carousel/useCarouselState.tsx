@@ -20,7 +20,7 @@ interface UseCarouselStateProps {
   openAiKey: string;
   unsplashKey: string;
   autoInitialize?: boolean;
-  carouselDescription?: string; // Nova propriedade
+  carouselDescription?: string;
 }
 
 export const useCarouselState = ({ 
@@ -28,7 +28,7 @@ export const useCarouselState = ({
   openAiKey, 
   unsplashKey,
   autoInitialize = false,
-  carouselDescription = "" // Parâmetro opcional com valor padrão
+  carouselDescription = ""
 }: UseCarouselStateProps) => {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -63,9 +63,6 @@ export const useCarouselState = ({
       setIsLoading(true);
       toast.loading("Gerando conteúdo com IA...", { id: "ai-generation" });
       
-      // Gera termos de busca melhores baseados no contexto do negócio e descrição do carrossel
-      const aiSearchTerm = `${businessInfo.businessName} ${businessInfo.industry} ${carouselDescription ? carouselDescription.substring(0, 50) : ""} ${businessInfo.postObjective} ${businessInfo.tone} professional marketing images`;
-      
       console.log("Inicializando carrossel com descrição:", carouselDescription);
       
       // First, generate the text content with carousel description
@@ -73,7 +70,7 @@ export const useCarouselState = ({
         businessInfo, 
         apiKey: openAiKey, 
         numSlides: 5,
-        carouselDescription // Passa a descrição para a geração de texto
+        carouselDescription
       });
       
       if (generatedTexts.length === 0) {
@@ -116,7 +113,7 @@ export const useCarouselState = ({
               accessKey: unsplashKey,
               searchQuery: `${businessInfo.businessName} ${slideText.substring(0, 50)}`,
               slideText: slideText,
-              carouselDescription // Passa a descrição do carrossel
+              carouselDescription
             });
           } catch (error) {
             console.error("Error finding images for slide:", error);
@@ -124,8 +121,8 @@ export const useCarouselState = ({
             return searchImages({ 
               businessInfo, 
               accessKey: unsplashKey,
-              searchQuery: aiSearchTerm,
-              carouselDescription // Passa a descrição do carrossel mesmo no fallback
+              searchQuery: `${businessInfo.industry} ${carouselDescription}`,
+              carouselDescription
             });
           }
         })
@@ -139,11 +136,11 @@ export const useCarouselState = ({
       const updatedSlides = initialSlides.map((slide, index) => {
         const slideSpecificImages = slideImages[index] || [];
         
-        // Add 1-2 relevant images from the slideSpecificImages to this slide
-        const slideImageObjects = slideSpecificImages.slice(0, 2).map((image, imgIndex) => ({
+        // Add ONLY 1 relevant image for each slide - fixing the issue of too many images
+        const slideImageObjects = slideSpecificImages.slice(0, 1).map((image) => ({
           id: uuidv4(),
           image: image,
-          position: { x: imgIndex === 0 ? 30 : 70, y: 65 },  // Position images at different spots
+          position: { x: 50, y: 65 },  // Position image in center bottom
           size: { width: 30, height: 30 },
           opacity: 1,
           filter: "none",
@@ -179,7 +176,7 @@ export const useCarouselState = ({
       initializeCarousel();
     }
   }, [autoInitialize, businessInfo, openAiKey, unsplashKey, carouselDescription]);
-  
+
   useEffect(() => {
     if (selectedTextBoxId) {
       const currentSlide = slides[currentSlideIndex];
@@ -226,20 +223,16 @@ export const useCarouselState = ({
       let enhancedQuery = searchTerm;
       
       if (!enhancedQuery && businessInfo) {
-        enhancedQuery = `${businessInfo.businessName} ${businessInfo.industry} ${currentSlideText.substring(0, 50)} ${carouselDescription ? carouselDescription.substring(0, 30) : ""} ${businessInfo.postObjective || ""} images`;
+        // Priorizar a descrição do carrossel e o texto do slide atual
+        enhancedQuery = `${currentSlideText.substring(0, 50)} ${carouselDescription ? carouselDescription.substring(0, 50) : ""} ${businessInfo.businessName} ${businessInfo.industry}`;
       }
       
-      const newBusinessInfo = {
-        ...businessInfo,
-        additionalInfo: enhancedQuery || businessInfo.additionalInfo || ""
-      };
-      
       const fetchedImages = await searchImages({
-        businessInfo: newBusinessInfo,
+        businessInfo,
         accessKey: unsplashKey,
         searchQuery: enhancedQuery,
         slideText: currentSlideText,
-        carouselDescription // Passa a descrição do carrossel
+        carouselDescription
       });
       
       if (fetchedImages.length === 0) {
@@ -270,7 +263,7 @@ export const useCarouselState = ({
         businessInfo,
         apiKey: openAiKey,
         numSlides: slides.length,
-        carouselDescription // Passa a descrição do carrossel
+        carouselDescription
       });
       
       if (generatedTexts.length === 0) {
@@ -302,9 +295,9 @@ export const useCarouselState = ({
             return await searchImages({ 
               businessInfo, 
               accessKey: unsplashKey,
-              searchQuery: `${businessInfo.businessName} ${slideText.substring(0, 50)}`,
+              searchQuery: `${slideText.substring(0, 50)} ${carouselDescription}`,
               slideText: slideText,
-              carouselDescription // Passa a descrição do carrossel
+              carouselDescription
             });
           } catch (error) {
             console.error("Error finding images for new text:", error);

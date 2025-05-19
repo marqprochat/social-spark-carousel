@@ -1,3 +1,4 @@
+
 import { BusinessInfo } from "@/components/BusinessInfoForm";
 import { toast } from "sonner";
 
@@ -26,8 +27,8 @@ interface SearchImagesProps {
   accessKey?: string;
   perPage?: number;
   searchQuery?: string;
-  slideText?: string; // Texto do slide para busca contextualizada
-  carouselDescription?: string; // Descrição do carrossel
+  slideText?: string; 
+  carouselDescription?: string;
 }
 
 // Mapeamento de segmentos para termos de busca mais relevantes
@@ -47,7 +48,8 @@ const industrySearchTerms: Record<string, string[]> = {
   "Entretenimento": ["entertainment", "events", "shows", "concert", "festival", "performance"],
   "Casa e Decoração": ["home decor", "interior design", "furniture", "decoration", "casa"],
   "Serviços Profissionais": ["professional services", "business", "consulting", "office"],
-  "Automotivo": ["automotive", "car", "vehicle", "auto shop", "mechanic", "cars", "auto parts", "carros"]
+  "Automotivo": ["automotive", "car", "vehicle", "auto shop", "mechanic", "cars", "auto parts", "carros", "oficina", "troca de óleo", "revisão"],
+  "Mecânica de veículos": ["auto repair", "car mechanic", "oil change", "troca de óleo", "revisão", "revisão veicular", "oficina mecânica", "manutenção de carros"]
 };
 
 export async function searchImages({
@@ -69,25 +71,25 @@ export async function searchImages({
     // Construir uma query mais relevante baseada nas informações do negócio
     let searchTerms: string[] = [];
     
-    // Se temos descrição do carrossel, priorizá-la na busca
-    if (carouselDescription && carouselDescription.length > 10) {
-      // Extrair palavras-chave da descrição (até 5 palavras relevantes)
+    // Primeiro, considere a descrição do carrossel como a fonte mais importante
+    if (carouselDescription && carouselDescription.length > 5) {
+      // Extrair todas as palavras da descrição, priorizando termos técnicos
       const descKeywords = carouselDescription
-        .split(/\s+/)
-        .filter(word => word.length > 4 && !['para', 'com', 'que', 'dos', 'das', 'uma', 'por', 'aos'].includes(word.toLowerCase()))
-        .slice(0, 5);
+        .split(/[\s,.]+/)
+        .filter(word => word.length > 3)
+        .slice(0, 8); // Pegar mais palavras-chave da descrição
       
       if (descKeywords.length > 0) {
-        searchTerms = [...searchTerms, ...descKeywords];
+        searchTerms = [...descKeywords];
       }
     }
     
-    // Se temos texto específico de um slide, adicioná-lo à busca
+    // Em seguida, considere o texto específico do slide se disponível
     if (slideText) {
-      // Extrair palavras-chave do texto do slide (até 5 palavras relevantes)
+      // Extrair palavras-chave do texto do slide
       const keywords = slideText
-        .split(/\s+/)
-        .filter(word => word.length > 4 && !['para', 'com', 'que', 'dos', 'das', 'uma', 'por', 'aos'].includes(word.toLowerCase()))
+        .split(/[\s,.]+/)
+        .filter(word => word.length > 3 && !searchTerms.includes(word))
         .slice(0, 5);
       
       if (keywords.length > 0) {
@@ -95,10 +97,10 @@ export async function searchImages({
       }
     }
     
-    // Adicionar termos específicos com base no segmento do negócio
+    // Adicionar termos específicos para o segmento do negócio (foco automotivo/mecânica)
     if (businessInfo.industry) {
       const industryTerms = industrySearchTerms[businessInfo.industry] || [businessInfo.industry];
-      searchTerms = [...searchTerms, ...industryTerms];
+      searchTerms = [...searchTerms, ...industryTerms.slice(0, 3)];
     }
     
     // Adicionar nome do negócio se não for muito genérico
@@ -106,40 +108,29 @@ export async function searchImages({
       searchTerms.push(businessInfo.businessName);
     }
     
-    // Adicionar público-alvo para imagens mais relevantes
-    if (businessInfo.targetAudience) {
-      const audienceKeywords = businessInfo.targetAudience
-        .split(' ')
-        .filter(word => word.length > 4 && !['anos', 'idade', 'entre', 'para'].includes(word.toLowerCase()));
-      
-      if (audienceKeywords.length > 0) {
-        searchTerms = [...searchTerms, ...audienceKeywords.slice(0, 2)];
+    // Usar o termo de busca customizado se fornecido, ou construir um com os termos mais relevantes
+    let searchQuery = customQuery || searchTerms.join(' ');
+    
+    // Adicionar termos específicos de "oficina mecânica" e "troca de óleo" se for sobre esse tema
+    if (carouselDescription?.toLowerCase().includes("troca de óleo") || 
+        carouselDescription?.toLowerCase().includes("revisão") ||
+        businessInfo.industry?.toLowerCase().includes("mecânica")) {
+      if (!searchQuery.toLowerCase().includes("óleo") && !searchQuery.toLowerCase().includes("oil")) {
+        searchQuery += " troca de óleo oil change oficina mecânica";
       }
     }
     
-    // Se houver um objetivo específico, incluí-lo na busca
-    if (businessInfo.postObjective) {
-      // Extrair palavras-chave do objetivo
-      const objectiveKeywords = businessInfo.postObjective
-        .split(' ')
-        .filter(word => word.length > 4)
-        .slice(0, 2);
-      searchTerms = [...searchTerms, ...objectiveKeywords];
-    }
+    // Adicionar termos que melhorem a qualidade visual das imagens
+    searchQuery += " high quality professional";
     
-    // Usar o termo de busca customizado se fornecido, ou construir um com os termos mais relevantes
-    const searchQuery = customQuery || searchTerms.join(' ');
-    
-    console.log("Termo de busca:", searchQuery);
+    console.log("Termo de busca final:", searchQuery);
 
     const url = new URL(UNSPLASH_API_URL);
     url.searchParams.append("query", searchQuery);
     url.searchParams.append("per_page", perPage.toString());
     url.searchParams.append("client_id", accessKey);
     url.searchParams.append("orientation", "landscape"); 
-    url.searchParams.append("content_filter", "high"); // Filtrar por conteúdo de alta qualidade
-
-    // Melhorar resultados com ordenação por relevância
+    url.searchParams.append("content_filter", "high");
     url.searchParams.append("order_by", "relevant");
 
     console.log("URL de busca:", url.toString());
@@ -158,11 +149,9 @@ export async function searchImages({
       // Tentar novamente com uma busca mais genérica se não houver resultados
       if (!customQuery) {
         console.log("Nenhum resultado encontrado. Tentando busca mais genérica...");
-        // Usar apenas a indústria e algumas palavras-chave da descrição
-        let fallbackQuery = businessInfo.industry;
-        if (carouselDescription) {
-          const mainWords = carouselDescription.split(' ').slice(0, 3).join(' ');
-          fallbackQuery = `${fallbackQuery} ${mainWords}`;
+        let fallbackQuery = "car mechanic oil change auto repair";
+        if (businessInfo.industry) {
+          fallbackQuery += ` ${businessInfo.industry}`;
         }
         return searchImages({
           businessInfo,
