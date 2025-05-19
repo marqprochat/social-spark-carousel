@@ -28,87 +28,85 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateAISearchTerm = async () => {
-    if (!businessInfo) {
-      toast.error("Informações da empresa não disponíveis");
+    if (!slideText) {
+      toast.error("Texto do slide não disponível");
       return;
     }
 
     setIsGenerating(true);
     try {
-      // Combine all relevant information for better context
-      const context = {
-        businessName: businessInfo.businessName || "",
-        industry: businessInfo.industry || "",
-        targetAudience: businessInfo.targetAudience || "",
-        objective: businessInfo.postObjective || "",
-        tone: businessInfo.tone || "",
-        additionalInfo: businessInfo.additionalInfo || "",
-        carouselDescription: carouselDescription || "",
-        slideText: slideText || "" 
-      };
-
-      // Gerar termos de busca com foco em "troca de óleo" e "revisão" se for esse o tema
-      let searchSuggestion = "";
+      // Extração de palavras-chave do texto do slide
+      const cleanText = slideText.replace(/[^\w\sÀ-ÿ]/gi, ' ').toLowerCase();
+      const words = cleanText.split(/\s+/);
       
-      // Verificar se é sobre troca de óleo ou revisão de veículos
-      const isAboutOilChange = carouselDescription?.toLowerCase().includes("troca de óleo") || 
-                               carouselDescription?.toLowerCase().includes("revisão") ||
-                               businessInfo.industry?.toLowerCase().includes("mecânica");
-
-      if (slideText) {
-        // Se temos texto do slide, combiná-lo com descrição do carrossel e dados da empresa
-        const slideKeywords = slideText.substring(0, 60);
-        
-        searchSuggestion = `${slideKeywords} ${carouselDescription?.substring(0, 40) || ""} ${context.businessName} ${context.industry}`;
-        
-        // Adicionar termos específicos se for sobre troca de óleo
-        if (isAboutOilChange) {
-          searchSuggestion += " troca de óleo oficina mecânica revisão automotiva";
-        }
-      } else if (carouselDescription) {
-        // Se temos descrição do carrossel mas não texto específico
-        searchSuggestion = `${context.businessName} ${carouselDescription.substring(0, 80)} ${context.industry}`;
-        
-        // Adicionar termos específicos se for sobre troca de óleo
-        if (isAboutOilChange) {
-          searchSuggestion += " troca de óleo oficina mecânica revisão automotiva";
-        }
-      } else {
-        // Caso contrário use contexto geral do negócio
-        searchSuggestion = `${context.businessName} ${context.industry} ${context.objective || ""} ${context.tone || ""}`;
-        
-        // Adicionar termos específicos se for sobre troca de óleo
-        if (isAboutOilChange) {
-          searchSuggestion += " troca de óleo oficina mecânica revisão automotiva";
+      // Remover palavras comuns (stop words em português)
+      const stopWords = ['de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'é', 'com', 'não', 'uma', 'os', 'no', 'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu', 'sua', 'ou', 'ser', 'quando', 'muito', 'há', 'nos', 'já', 'está', 'eu', 'também', 'só', 'pelo', 'pela', 'até', 'isso', 'ela', 'entre', 'era', 'depois', 'sem', 'mesmo', 'aos', 'ter', 'seus', 'quem', 'nas', 'me', 'esse', 'eles', 'estão', 'você', 'tinha', 'foram', 'essa', 'num', 'nem', 'suas', 'meu', 'às', 'minha', 'têm', 'numa', 'pelos', 'elas', 'havia', 'seja', 'qual', 'será', 'nós'];
+      
+      // Filtrar palavras relevantes (não stop words e com mais de 3 caracteres)
+      const keyWords = words
+        .filter(word => word.length > 3 && !stopWords.includes(word))
+        .slice(0, 5); // Pegar até 5 palavras-chave
+      
+      // Adicionar contexto específico de negócio
+      let contextTerms = [];
+      
+      if (businessInfo?.industry) {
+        // Detectar se é sobre mecânica/troca de óleo
+        if (businessInfo.industry.toLowerCase().includes('mecânica') || 
+            businessInfo.industry.toLowerCase().includes('auto') ||
+            slideText.toLowerCase().includes('óleo') ||
+            slideText.toLowerCase().includes('motor') ||
+            slideText.toLowerCase().includes('revisão') ||
+            slideText.toLowerCase().includes('veículo') ||
+            slideText.toLowerCase().includes('manutenção')) {
+          
+          // Adicionar termos específicos baseados no contexto do slide
+          if (slideText.toLowerCase().includes('óleo')) {
+            contextTerms.push('troca de óleo', 'oil change', 'motor oil', 'lubrificante');
+          } else if (slideText.toLowerCase().includes('revisão')) {
+            contextTerms.push('revisão veicular', 'car maintenance', 'check-up');
+          } else if (slideText.toLowerCase().includes('motor')) {
+            contextTerms.push('motor de carro', 'engine maintenance', 'car engine');
+          } else if (slideText.toLowerCase().includes('segurança')) {
+            contextTerms.push('segurança automotiva', 'car safety', 'car inspection');
+          } else {
+            contextTerms.push('oficina mecânica', 'car repair', 'auto service');
+          }
         }
       }
       
-      // Adicionar "high quality" para melhorar qualidade das imagens
-      searchSuggestion += " high quality professional";
+      // Combinar palavras-chave do texto + contexto + termos gerais de qualidade
+      const searchKeywords = [
+        ...keyWords, 
+        ...contextTerms,
+        businessInfo?.businessName || "",
+        "professional", 
+        "high quality"
+      ].filter(Boolean).join(' ');
       
-      setAiSuggestion(searchSuggestion);
-      setSearchTerm(searchSuggestion);
+      setAiSuggestion(searchKeywords);
+      setSearchTerm(searchKeywords);
       
-      // Automatically search after setting the term
+      // Pesquisar automaticamente após definir os termos
       setTimeout(() => {
         handleSearchImages();
       }, 300);
       
-      toast.success("Termo de busca gerado com IA");
+      toast.success("Palavras-chave geradas com base no texto do slide");
     } catch (error) {
       console.error("Erro ao gerar termo de busca:", error);
-      toast.error("Erro ao gerar termo de busca com IA");
+      toast.error("Erro ao gerar palavras-chave");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Automatically generate search term when component loads if business info is available
+  // Gerar termo de busca automaticamente quando o texto do slide mudar
   useEffect(() => {
-    if (businessInfo && !searchTerm && !aiSuggestion) {
+    if (slideText && !searchTerm) {
       generateAISearchTerm();
     }
-  }, [businessInfo, slideText, carouselDescription]);
+  }, [slideText]);
 
   return (
     <div className="space-y-2">
@@ -126,17 +124,17 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
         </Button>
         <Button 
           onClick={generateAISearchTerm} 
-          disabled={isLoading || isGenerating}
+          disabled={isLoading || isGenerating || !slideText}
           variant="default"
           className="whitespace-nowrap"
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          Sugestão IA
+          Palavras-chave
         </Button>
       </div>
       {aiSuggestion && (
         <p className="text-xs text-muted-foreground">
-          Sugestão gerada: <span className="font-medium">{aiSuggestion}</span>
+          Palavras-chave: <span className="font-medium">{aiSuggestion}</span>
         </p>
       )}
     </div>

@@ -20,12 +20,18 @@ const ImagesPanel: React.FC<ImagesPanelProps> = ({
   updateSlideImage,
 }) => {
   const handleAddImage = (image: UnsplashImage) => {
-    // Criar dados para a imagem
+    // Se temos a função updateSlideImage disponível, usamos ela diretamente
+    if (updateSlideImage) {
+      updateSlideImage(image);
+      return;
+    }
+    
+    // Caso contrário, criamos dados para a imagem e usamos onAddImage
     const newImageData: SlideImageData = {
       id: uuidv4(),
       image,
-      position: { x: 50, y: 50 }, // Centro do slide
-      size: { width: 100, height: 100 }, // Tamanho completo para uso como fundo
+      position: { x: 50, y: 50 },
+      size: { width: 100, height: 100 },
       opacity: 1,
       filter: "none",
       zIndex: 1,
