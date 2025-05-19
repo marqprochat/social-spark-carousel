@@ -35,7 +35,7 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
 
     setIsGenerating(true);
     try {
-      // Identificar palavras-chave principais do texto
+      // Limpar o texto e separar palavras
       const cleanText = slideText.replace(/[^\w\sÀ-ÿ]/gi, ' ').toLowerCase();
       const words = cleanText.split(/\s+/);
       
@@ -75,19 +75,24 @@ const ImageSearchPanel: React.FC<ImageSearchPanelProps> = ({
       
       // Adicionar um modificador visual relacionado ao tipo de imagem que queremos
       const imageTypes = [
-        'real photo', 
-        'professional photography', 
+        'professional photo', 
         'clean background',
-        'colorful'
+        'colorful',
+        'realistic image',
+        'high quality photo'
       ];
       const randomImageType = imageTypes[Math.floor(Math.random() * imageTypes.length)];
       
+      // Adicionar um número aleatório para evitar resultados repetidos
+      const randomSuffix = Math.floor(Math.random() * 10000);
+      
       // Combinar palavras-chave + temas específicos + tipo de imagem + contexto da empresa
       const searchKeywords = [
-        ...keyWords, 
+        ...keyWords.slice(0, 3), 
         ...themes.slice(0, 2), // Limitar a 2 temas para não sobrecarregar
         randomImageType,
-        businessInfo?.businessName || "",
+        businessInfo?.industry || "auto repair",
+        `${randomSuffix % 100}`
       ].filter(Boolean).join(' ');
       
       console.log("Termos de busca gerados para o slide:", searchKeywords);

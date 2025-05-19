@@ -103,51 +103,78 @@ export const useCarouselState = ({
       
       setSlides(initialSlides);
       
-      // Buscar imagens para cada slide individualmente
-      const updatedSlides = await Promise.all(
-        initialSlides.map(async (slide, index) => {
-          try {
-            // Usar o texto específico de cada slide para buscar imagens relevantes
-            const slideText = generatedTexts[index];
+      // Buscar imagens INDIVIDUAIS para cada slide
+      const updatedSlides = [...initialSlides];
+      
+      // Array para armazenar todas as imagens encontradas (para evitar duplicação)
+      const allFoundImages: UnsplashImage[] = [];
+      
+      // Buscar imagens para cada slide sequencialmente para garantir resultados únicos
+      for (let i = 0; i < initialSlides.length; i++) {
+        try {
+          const slideText = generatedTexts[i];
+          
+          // Gerar palavras-chave específicas para esse slide com base no texto
+          const keywords = extractKeywordsFromText(slideText, businessInfo);
+          
+          // Adicionar um valor aleatório para evitar resultados repetidos
+          const randomSuffix = Math.floor(Math.random() * 10000);
+          const searchQuery = `${keywords} ${randomSuffix}`;
+          
+          console.log(`Buscando imagem para o slide ${i+1} com keywords:`, searchQuery);
+          
+          const slideImages = await searchImages({ 
+            businessInfo, 
+            accessKey: unsplashKey,
+            searchQuery,
+            slideText,
+            carouselDescription
+          });
+          
+          if (slideImages && slideImages.length > 0) {
+            // Procurar por uma imagem que ainda não foi usada em outro slide
+            let selectedImage = null;
             
-            // Adicionar alguma aleatoriedade para evitar imagens duplicadas
-            const randomSuffix = Math.floor(Math.random() * 1000);
-            
-            // Criar uma query única para cada slide
-            const searchQuery = `${slideText.substring(0, 50)} ${businessInfo.industry} ${randomSuffix}`;
-            
-            const slideImages = await searchImages({ 
-              businessInfo, 
-              accessKey: unsplashKey,
-              searchQuery,
-              slideText,
-              carouselDescription
-            });
-            
-            // Apenas definir a imagem de fundo se encontramos imagens
-            if (slideImages && slideImages.length > 0) {
-              return {
-                ...slide,
-                backgroundImage: slideImages[0] || null
-              };
+            for (const image of slideImages) {
+              // Verificar se esta imagem já foi usada
+              const isDuplicate = allFoundImages.some(img => img.id === image.id);
+              
+              if (!isDuplicate) {
+                selectedImage = image;
+                allFoundImages.push(image);
+                break;
+              }
             }
             
-            return slide;
-          } catch (error) {
-            console.error(`Erro ao buscar imagens para o slide ${index}:`, error);
-            return slide;
+            // Se todas já foram usadas, use a primeira do resultado mesmo
+            if (!selectedImage && slideImages.length > 0) {
+              selectedImage = slideImages[0];
+              allFoundImages.push(selectedImage);
+            }
+            
+            // Definir a imagem de fundo do slide
+            if (selectedImage) {
+              updatedSlides[i] = {
+                ...updatedSlides[i],
+                backgroundImage: selectedImage
+              };
+            }
           }
-        })
-      );
+        } catch (error) {
+          console.error(`Erro ao buscar imagens para o slide ${i}:`, error);
+        }
+      }
       
       setSlides(updatedSlides);
       
-      // Buscar imagens gerais para o painel de imagens
+      // Buscar mais imagens gerais para o painel de imagens
       try {
+        // Usar palavras-chave do primeiro slide para o painel de imagens inicial
+        const initialPanelKeywords = extractKeywordsFromText(generatedTexts[0], businessInfo);
         const allImages = await searchImages({ 
           businessInfo, 
           accessKey: unsplashKey,
-          searchQuery: `${businessInfo.industry} ${carouselDescription}`,
+          searchQuery: initialPanelKeywords,
           carouselDescription
         });
         
@@ -167,6 +194,56 @@ export const useCarouselState = ({
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Nova função para extrair palavras-chave de um texto para busca de imagens
+  const extractKeywordsFromText = (text: string, businessInfo: BusinessInfo): string => {
+    if (!text) return businessInfo.industry;
+    
+    // Limpar o texto e separar palavras
+    const cleanText = text.replace(/[^\w\sÀ-ÿ]/gi, ' ').toLowerCase();
+    const words = cleanText.split(/\s+/);
+    
+    // Remover palavras comuns (stop words em português)
+    const stopWords = ['de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'é', 'com', 'não', 'uma', 'os', 'no', 'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu', 'sua', 'ou', 'ser', 'quando', 'muito', 'há', 'nos', 'já', 'está', 'eu', 'também', 'só', 'pelo', 'pela', 'até', 'isso', 'ela', 'entre', 'era', 'depois', 'sem', 'mesmo', 'aos', 'ter', 'seus', 'quem', 'nas', 'me', 'esse', 'eles', 'estão', 'você', 'tinha', 'foram', 'essa', 'num', 'nem', 'suas', 'meu', 'às', 'minha', 'têm', 'numa', 'pelos', 'elas', 'havia', 'seja', 'qual', 'será', 'nós'];
+    
+    // Filtrar palavras relevantes (não stop words e com mais de 3 caracteres)
+    const keyWords = words
+      .filter(word => word.length > 3 && !stopWords.includes(word))
+      .slice(0, 4); // Limitar para as 4 palavras mais relevantes
+    
+    // Detectar temas específicos no texto
+    const themes = [];
+    
+    if (cleanText.includes('férias')) themes.push('férias', 'viagem');
+    if (cleanText.includes('segurança')) themes.push('segurança veicular');
+    if (cleanText.includes('família')) themes.push('família');
+    if (cleanText.includes('revisão')) themes.push('revisão de carro');
+    if (cleanText.includes('manutenção')) themes.push('manutenção de carro');
+    if (cleanText.includes('óleo')) themes.push('troca de óleo');
+    if (cleanText.includes('motor')) themes.push('motor de carro');
+    if (cleanText.includes('preço') || cleanText.includes('justo')) themes.push('preço justo');
+    if (cleanText.includes('qualidade')) themes.push('serviço de qualidade');
+    
+    // Adicionar modificador visual
+    const visualModifiers = [
+      'professional photo', 
+      'high quality image',
+      'realistic'
+    ];
+    const randomModifier = visualModifiers[Math.floor(Math.random() * visualModifiers.length)];
+    
+    // Combinar palavras-chave + temas + tipo de imagem
+    const combinedTerms = [
+      ...keyWords,
+      ...themes.slice(0, 2),
+      randomModifier,
+      businessInfo.industry
+    ].filter(Boolean).join(' ');
+    
+    console.log("Palavras-chave geradas para busca de imagem:", combinedTerms);
+    
+    return combinedTerms;
   };
   
   useEffect(() => {
@@ -217,19 +294,26 @@ export const useCarouselState = ({
       // Get the current slide's text for more relevant images
       const currentSlideText = slides[currentSlideIndex]?.textBoxes[0]?.text || "";
       
-      // Enrich the search query with slide text and business context
-      let enhancedQuery = searchTerm;
+      let enhancedQuery;
       
-      if (!enhancedQuery && currentSlideText) {
-        // Adicionar aleatoriedade para evitar imagens duplicadas
-        const randomSuffix = Math.floor(Math.random() * 1000);
-        enhancedQuery = `${currentSlideText.substring(0, 50)} ${randomSuffix}`;
+      if (searchTerm) {
+        // Se o usuário forneceu um termo de busca, use-o
+        enhancedQuery = searchTerm;
+      } else {
+        // Gere palavras-chave a partir do texto do slide
+        enhancedQuery = extractKeywordsFromText(currentSlideText, businessInfo);
       }
+      
+      // Adicionar aleatoriedade para evitar resultados repetidos
+      const randomSuffix = Math.floor(Math.random() * 10000);
+      const finalQuery = `${enhancedQuery} ${randomSuffix}`;
+      
+      console.log("Termo de busca final:", finalQuery);
       
       const fetchedImages = await searchImages({
         businessInfo,
         accessKey: unsplashKey,
-        searchQuery: enhancedQuery,
+        searchQuery: finalQuery,
         slideText: currentSlideText,
         carouselDescription
       });
@@ -287,27 +371,58 @@ export const useCarouselState = ({
       setSlides(updatedSlides);
       toast.success("Textos gerados com sucesso!");
       
-      // Buscar novas imagens relevantes para os novos textos
-      const slideImages = await Promise.all(
-        generatedTexts.map(async (slideText) => {
-          try {
-            return await searchImages({ 
-              businessInfo, 
-              accessKey: unsplashKey,
-              searchQuery: `${slideText.substring(0, 50)} ${carouselDescription}`,
-              slideText: slideText,
-              carouselDescription
-            });
-          } catch (error) {
-            console.error("Error finding images for new text:", error);
-            return [];
-          }
-        })
-      );
+      // Buscar novas imagens relevantes para cada um dos novos textos
+      const newUpdatedSlides = [...updatedSlides];
       
-      const newAllImages = slideImages.flat();
-      if (newAllImages.length > 0) {
-        setImages(newAllImages);
+      for (let i = 0; i < newUpdatedSlides.length; i++) {
+        try {
+          const slideText = generatedTexts[i];
+          
+          // Gerar palavras-chave específicas para esse slide com base no texto
+          const keywords = extractKeywordsFromText(slideText, businessInfo);
+          
+          // Adicionar um valor aleatório para evitar resultados repetidos
+          const randomSuffix = Math.floor(Math.random() * 10000);
+          const searchQuery = `${keywords} ${randomSuffix}`;
+          
+          console.log(`Buscando imagem para o slide ${i+1} com keywords (após regeneração):`, searchQuery);
+          
+          const slideImages = await searchImages({ 
+            businessInfo, 
+            accessKey: unsplashKey,
+            searchQuery,
+            slideText,
+            carouselDescription
+          });
+          
+          if (slideImages && slideImages.length > 0) {
+            // Definir a primeira imagem como fundo do slide
+            newUpdatedSlides[i] = {
+              ...newUpdatedSlides[i],
+              backgroundImage: slideImages[0]
+            };
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar imagens para o slide ${i} após regeneração:`, error);
+        }
+      }
+      
+      setSlides(newUpdatedSlides);
+      
+      // Buscar novas imagens para o painel atual com base no slide atual
+      if (generatedTexts[currentSlideIndex]) {
+        const newKeywords = extractKeywordsFromText(generatedTexts[currentSlideIndex], businessInfo);
+        const newImages = await searchImages({
+          businessInfo,
+          accessKey: unsplashKey,
+          searchQuery: newKeywords,
+          slideText: generatedTexts[currentSlideIndex],
+          carouselDescription
+        });
+        
+        if (newImages.length > 0) {
+          setImages(newImages);
+        }
       }
       
     } catch (error) {
