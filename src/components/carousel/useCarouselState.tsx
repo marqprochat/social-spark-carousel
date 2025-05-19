@@ -323,18 +323,27 @@ export const useCarouselState = ({
   };
   
   const updateSlideImage = (image: UnsplashImage) => {
-    const updatedSlides = [...slides];
-    updatedSlides[currentSlideIndex].backgroundImage = image;
-    setSlides(updatedSlides);
+    // Definir a imagem como imagem de fundo do slide atual
+    setSlides(currentSlides => {
+      const newSlides = [...currentSlides];
+      const slideToUpdate = { ...newSlides[currentSlideIndex] };
+      
+      slideToUpdate.backgroundImage = image;
+      newSlides[currentSlideIndex] = slideToUpdate;
+      
+      return newSlides;
+    });
+    
+    // Limpar qualquer seleção de imagem
+    setSelectedImageId("");
   };
 
   const handleAddImage = (imageData: SlideImageData) => {
-    // Set default fixed size when adding a new image
-    const imageWithDefaultSize = {
-      ...imageData,
-      size: { width: 30, height: 30 }
-    };
-    setSlides(addImageToSlide(slides, currentSlideIndex, imageWithDefaultSize));
+    // Em vez de adicionar uma imagem solta, vamos definir essa imagem como background
+    updateSlideImage(imageData.image);
+    
+    // Notificar o usuário
+    toast.success("Imagem definida como fundo do slide");
   };
 
   const handleUpdateImage = (imageId: string, updates: Partial<SlideImageData>) => {

@@ -71,36 +71,36 @@ export async function searchImages({
     // Construir uma query mais relevante baseada nas informações do negócio
     let searchTerms: string[] = [];
     
-    // Primeiro, considere a descrição do carrossel como a fonte mais importante
-    if (carouselDescription && carouselDescription.length > 5) {
+    // Primeiro, considere o texto específico do slide como a fonte mais importante
+    if (slideText && slideText.length > 5) {
       // Extrair todas as palavras da descrição, priorizando termos técnicos
-      const descKeywords = carouselDescription
+      const slideKeywords = slideText
         .split(/[\s,.]+/)
         .filter(word => word.length > 3)
-        .slice(0, 8); // Pegar mais palavras-chave da descrição
+        .slice(0, 5); // Pegar palavras-chave do slide
       
-      if (descKeywords.length > 0) {
-        searchTerms = [...descKeywords];
+      if (slideKeywords.length > 0) {
+        searchTerms = [...slideKeywords];
       }
     }
     
-    // Em seguida, considere o texto específico do slide se disponível
-    if (slideText) {
-      // Extrair palavras-chave do texto do slide
-      const keywords = slideText
+    // Em seguida, considere a descrição do carrossel
+    if (carouselDescription && carouselDescription.length > 5) {
+      // Extrair palavras-chave da descrição
+      const descKeywords = carouselDescription
         .split(/[\s,.]+/)
         .filter(word => word.length > 3 && !searchTerms.includes(word))
-        .slice(0, 5);
+        .slice(0, 3); // Limitar para não ter muitas palavras
       
-      if (keywords.length > 0) {
-        searchTerms = [...searchTerms, ...keywords];
+      if (descKeywords.length > 0) {
+        searchTerms = [...searchTerms, ...descKeywords];
       }
     }
     
     // Adicionar termos específicos para o segmento do negócio (foco automotivo/mecânica)
     if (businessInfo.industry) {
       const industryTerms = industrySearchTerms[businessInfo.industry] || [businessInfo.industry];
-      searchTerms = [...searchTerms, ...industryTerms.slice(0, 3)];
+      searchTerms = [...searchTerms, ...industryTerms.slice(0, 2)];
     }
     
     // Adicionar nome do negócio se não for muito genérico
@@ -112,11 +112,22 @@ export async function searchImages({
     let searchQuery = customQuery || searchTerms.join(' ');
     
     // Adicionar termos específicos de "oficina mecânica" e "troca de óleo" se for sobre esse tema
-    if (carouselDescription?.toLowerCase().includes("troca de óleo") || 
+    if ((carouselDescription?.toLowerCase().includes("troca de óleo") || 
         carouselDescription?.toLowerCase().includes("revisão") ||
-        businessInfo.industry?.toLowerCase().includes("mecânica")) {
-      if (!searchQuery.toLowerCase().includes("óleo") && !searchQuery.toLowerCase().includes("oil")) {
-        searchQuery += " troca de óleo oil change oficina mecânica";
+        businessInfo.industry?.toLowerCase().includes("mecânica")) && 
+        !searchQuery.toLowerCase().includes("óleo")) {
+      
+      // Verificar o contexto do slide atual para adicionar termos específicos
+      if (slideText?.toLowerCase().includes("óleo")) {
+        searchQuery += " troca de óleo lubrificante motor oficina";
+      } else if (slideText?.toLowerCase().includes("revisão")) {
+        searchQuery += " revisão veicular oficina mecânica";
+      } else if (slideText?.toLowerCase().includes("motor")) {
+        searchQuery += " motor veicular oficina mecânica";
+      } else if (slideText?.toLowerCase().includes("segurança")) {
+        searchQuery += " segurança automotiva mecânica";
+      } else {
+        searchQuery += " troca de óleo oficina mecânica";
       }
     }
     

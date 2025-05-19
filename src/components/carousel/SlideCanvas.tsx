@@ -1,8 +1,6 @@
 
-// Não preciso modificar este arquivo, mas vou preservá-lo para mostrar que o entendo
 import React, { useRef } from "react";
 import TextBox from "@/components/TextBox";
-import SlideImages from "@/components/SlideImages";
 import { Slide } from "@/components/CarouselCreatorExtension";
 
 interface SlideCanvasProps {
@@ -89,18 +87,6 @@ const SlideCanvas: React.FC<SlideCanvasProps> = ({
           }}
         />
       )}
-      
-      {currentSlide && <SlideImages 
-        images={currentSlide.images}
-        onSelect={handleImageSelect}
-        selectedId={selectedImageId}
-        onDelete={handleDeleteImage}
-        onDragStart={handleImageDragStart}
-        onPositionChange={(id, position) => {
-          // This is handled by the parent component through draggedImageId
-        }}
-        onSizeChange={handleImageSizeChange}
-      />}
       
       {currentSlide?.textBoxes.map((textBox) => (
         <TextBox

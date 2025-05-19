@@ -20,12 +20,12 @@ const ImagesPanel: React.FC<ImagesPanelProps> = ({
   updateSlideImage,
 }) => {
   const handleAddImage = (image: UnsplashImage) => {
-    // Add an image at a fixed position initially
+    // Criar dados para a imagem
     const newImageData: SlideImageData = {
       id: uuidv4(),
       image,
-      position: { x: 50, y: 50 }, // Center of the slide
-      size: { width: 30, height: 30 }, // Fixed size: 30% of slide width
+      position: { x: 50, y: 50 }, // Centro do slide
+      size: { width: 100, height: 100 }, // Tamanho completo para uso como fundo
       opacity: 1,
       filter: "none",
       zIndex: 1,
@@ -59,24 +59,13 @@ const ImagesPanel: React.FC<ImagesPanelProps> = ({
               />
               
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center gap-2 p-2">
-                {updateSlideImage && (
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => updateSlideImage(image)}
-                  >
-                    Definir como fundo
-                  </Button>
-                )}
-                
                 <Button 
                   variant="default" 
                   size="sm" 
                   className="w-full"
                   onClick={() => handleAddImage(image)}
                 >
-                  Adicionar à slide
+                  Definir como fundo
                 </Button>
               </div>
               
