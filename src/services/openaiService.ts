@@ -5,7 +5,7 @@ import { BusinessInfo } from "@/components/BusinessInfoForm";
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 const GROK_API_URL = "https://api.grok.x/v1/chat/completions";
-const DEFAULT_API_KEY = "sk-proj-A7hlYKaOW4EzUkDMurLwDobCbpL_zrIPX-hQc7yOHcKU_vnqBO3PjRPxpgnULP0eDrqecvSFH1x6BZPIVKELUF38guol8tlL5LfVLYuC1RygA";
+const DEFAULT_API_KEY = "";  // Removido a chave default para forçar o uso da chave do usuário
 
 interface GenerateTextProps {
   businessInfo: BusinessInfo;
@@ -19,7 +19,7 @@ interface GenerateTextProps {
 
 export async function generateCarouselContent({
   businessInfo,
-  apiKey = DEFAULT_API_KEY,
+  apiKey = "",
   numSlides = 5,
   carouselDescription = "",
   provider = "openai",
