@@ -9,14 +9,14 @@ interface ApiKeys {
   selectedProvider?: string;
 }
 
-// Função para verificar se temos as chaves armazenadas
+// Function to check if we have the stored keys
 export const hasApiKeys = async (): Promise<boolean> => {
   try {
-    // Primeiro, verificar se está autenticado
+    // First, check if authenticated
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-      // Se autenticado, verificar keys na tabela
+      // If authenticated, check keys in the table
       const { data } = await supabase
         .from('api_keys')
         .select('*')
@@ -25,7 +25,7 @@ export const hasApiKeys = async (): Promise<boolean> => {
         
       if (data?.unsplash_key) return true;
     } else {
-      // Se não autenticado, verificar no localStorage
+      // If not authenticated, check in localStorage
       const keys = localStorage.getItem('api_keys');
       if (keys) {
         const parsedKeys = JSON.parse(keys);
@@ -35,19 +35,19 @@ export const hasApiKeys = async (): Promise<boolean> => {
     
     return false;
   } catch (error) {
-    console.error("Erro ao verificar chaves:", error);
+    console.error("Error checking keys:", error);
     return false;
   }
 };
 
-// Função para obter as chaves armazenadas
+// Function to get the stored keys
 export const getApiKeys = async (): Promise<ApiKeys | null> => {
   try {
-    // Primeiro verificar se está autenticado
+    // First check if authenticated
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-      // Se autenticado, buscar da tabela
+      // If authenticated, fetch from table
       const { data, error } = await supabase
         .from('api_keys')
         .select('*')
@@ -55,9 +55,9 @@ export const getApiKeys = async (): Promise<ApiKeys | null> => {
         .single();
         
       if (error) {
-        console.error("Erro ao obter chaves:", error);
+        console.error("Error getting keys:", error);
         
-        // Fallback para localStorage
+        // Fallback to localStorage
         const keys = localStorage.getItem('api_keys');
         if (keys) return JSON.parse(keys);
         
@@ -65,28 +65,29 @@ export const getApiKeys = async (): Promise<ApiKeys | null> => {
       }
       
       if (data) {
+        // Handle case where columns might not exist yet in the database
         return {
           openAiKey: data.openai_key,
           unsplashKey: data.unsplash_key,
-          grokKey: data.grok_key,
-          geminiKey: data.gemini_key,
+          grokKey: data.grok_key || "",
+          geminiKey: data.gemini_key || "",
           selectedProvider: data.selected_provider || 'openai'
         };
       }
     } else {
-      // Se não autenticado, usar localStorage
+      // If not authenticated, use localStorage
       const keys = localStorage.getItem('api_keys');
       if (keys) return JSON.parse(keys);
     }
     
     return null;
   } catch (error) {
-    console.error("Erro ao obter chaves:", error);
+    console.error("Error getting keys:", error);
     return null;
   }
 };
 
-// Função para salvar as chaves
+// Function to save the keys
 export const saveApiKeys = async (
   openAiKey: string,
   unsplashKey: string,
@@ -95,11 +96,11 @@ export const saveApiKeys = async (
   selectedProvider: string = "openai"
 ): Promise<void> => {
   try {
-    // Verificar se está autenticado
+    // Check if authenticated
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-      // Se autenticado, salvar na tabela
+      // If authenticated, save to table
       const { error } = await supabase
         .from('api_keys')
         .upsert({
@@ -114,12 +115,12 @@ export const saveApiKeys = async (
         });
         
       if (error) {
-        console.error("Erro ao salvar chaves:", error);
+        console.error("Error saving keys:", error);
         throw error;
       }
     }
     
-    // Sempre salvar no localStorage como backup/para usuários não autenticados
+    // Always save to localStorage as backup/for unauthenticated users
     localStorage.setItem('api_keys', JSON.stringify({
       openAiKey,
       unsplashKey,
@@ -129,7 +130,7 @@ export const saveApiKeys = async (
     }));
     
   } catch (error) {
-    console.error("Erro ao salvar chaves:", error);
+    console.error("Error saving keys:", error);
     throw error;
   }
 };

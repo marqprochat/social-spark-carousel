@@ -12,7 +12,7 @@ const CarouselEditor = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
-  const [openAiKey, setOpenAiKey] = useState<string>(""); 
+  const [openAiKey, setOpenAiKey] = useState<string>("");
   const [unsplashKey, setUnsplashKey] = useState<string>("");
   const [grokKey, setGrokKey] = useState<string>("");
   const [geminiKey, setGeminiKey] = useState<string>("");
@@ -30,7 +30,7 @@ const CarouselEditor = () => {
           return;
         }
         
-        // Carregar chaves de API
+        // Load API keys
         const apiKeys = await getApiKeys();
         if (apiKeys) {
           setOpenAiKey(apiKeys.openAiKey || "");

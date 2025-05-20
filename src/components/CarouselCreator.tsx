@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useCarouselState } from "./carousel/useCarouselState";
 import { BusinessInfo } from "@/components/BusinessInfoForm";
@@ -21,16 +22,22 @@ interface CarouselCreatorProps {
   businessInfo: BusinessInfo;
   openAiKey: string;
   unsplashKey: string;
+  grokKey: string;
+  geminiKey: string;
+  selectedProvider: string;
   onBack: () => void;
-  carouselDescription?: string; // Nova propriedade para descrição do carrossel
+  carouselDescription?: string;
 }
 
 const CarouselCreator: React.FC<CarouselCreatorProps> = ({
   businessInfo,
   openAiKey,
   unsplashKey,
+  grokKey,
+  geminiKey,
+  selectedProvider,
   onBack,
-  carouselDescription = "" // Valor padrão vazio
+  carouselDescription = ""
 }) => {
   const navigate = useNavigate();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
