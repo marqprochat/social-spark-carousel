@@ -19,6 +19,9 @@ interface UseCarouselStateProps {
   businessInfo: BusinessInfo
   openAiKey: string
   unsplashKey: string
+  grokKey?: string
+  geminiKey?: string
+  selectedProvider?: string
   autoInitialize?: boolean
   carouselDescription?: string
 }
@@ -27,6 +30,9 @@ export const useCarouselState = ({
   businessInfo,
   openAiKey,
   unsplashKey,
+  grokKey = "",
+  geminiKey = "",
+  selectedProvider = "openai",
   autoInitialize = false,
   carouselDescription = "",
 }: UseCarouselStateProps) => {
@@ -64,13 +70,17 @@ export const useCarouselState = ({
       toast.loading("Gerando conteúdo com IA...", { id: "ai-generation" })
 
       console.log("Inicializando carrossel com descrição:", carouselDescription)
+      console.log("Usando provedor:", selectedProvider)
 
-      // First, generate the text content with carousel description
+      // First, generate the text content with carousel description based on the selected provider
       const generatedTexts = await generateCarouselContent({
         businessInfo,
         apiKey: openAiKey,
         numSlides: 5,
         carouselDescription,
+        provider: selectedProvider,
+        grokKey,
+        geminiKey
       })
 
       if (generatedTexts.length === 0) {
@@ -183,7 +193,7 @@ export const useCarouselState = ({
         console.error("Erro ao buscar imagens gerais:", error)
       }
 
-      toast.success("Carrossel criado com IA!", { id: "ai-generation" })
+      toast.success(`Carrossel criado com ${selectedProvider.toUpperCase()}!`, { id: "ai-generation" })
     } catch (error) {
       console.error("Erro ao inicializar carrossel:", error)
       toast.error(error instanceof Error ? error.message : "Erro ao criar carrossel. Por favor, tente novamente.", {
@@ -364,7 +374,7 @@ export const useCarouselState = ({
     if (autoInitialize) {
       initializeCarousel()
     }
-  }, [autoInitialize, businessInfo, openAiKey, unsplashKey, carouselDescription])
+  }, [autoInitialize, businessInfo, openAiKey, unsplashKey, grokKey, geminiKey, selectedProvider, carouselDescription])
 
   useEffect(() => {
     if (selectedTextBoxId) {
@@ -451,13 +461,16 @@ export const useCarouselState = ({
     try {
       setIsLoading(true)
 
-      toast.loading("Gerando novos textos...")
+      toast.loading(`Gerando novos textos com ${selectedProvider.toUpperCase()}...`)
 
       const generatedTexts = await generateCarouselContent({
         businessInfo,
         apiKey: openAiKey,
         numSlides: slides.length,
         carouselDescription,
+        provider: selectedProvider,
+        grokKey,
+        geminiKey
       })
 
       if (generatedTexts.length === 0) {

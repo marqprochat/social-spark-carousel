@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import { getApiKeys, saveApiKeys } from "@/utils/apiKeys";
@@ -12,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 const Settings = () => {
   const [openAiKey, setOpenAiKey] = useState<string>("");
   const [unsplashKey, setUnsplashKey] = useState<string>("");
+  const [grokKey, setGrokKey] = useState<string>("");
+  const [geminiKey, setGeminiKey] = useState<string>("");
+  const [selectedProvider, setSelectedProvider] = useState<string>("openai");
   const [loading, setLoading] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
@@ -36,6 +40,9 @@ const Settings = () => {
       if (keys) {
         setOpenAiKey(keys.openAiKey || "");
         setUnsplashKey(keys.unsplashKey || "");
+        setGrokKey(keys.grokKey || "");
+        setGeminiKey(keys.geminiKey || "");
+        setSelectedProvider(keys.selectedProvider || "openai");
       }
     } catch (error) {
       console.error("Erro ao carregar chaves:", error);
@@ -46,15 +53,35 @@ const Settings = () => {
   };
 
   const handleSave = async () => {
-    if (!openAiKey || !unsplashKey) {
-      toast.error("Por favor, forneça ambas as chaves API.");
+    // Verificar se há chave para o provedor selecionado
+    let hasProviderKey = false;
+    
+    switch (selectedProvider) {
+      case "openai":
+        hasProviderKey = !!openAiKey;
+        break;
+      case "grok":
+        hasProviderKey = !!grokKey;
+        break;
+      case "gemini":
+        hasProviderKey = !!geminiKey;
+        break;
+    }
+    
+    if (!hasProviderKey) {
+      toast.error(`Por favor, forneça a chave para o provedor ${selectedProvider.toUpperCase()}.`);
+      return;
+    }
+    
+    if (!unsplashKey) {
+      toast.error("Por favor, forneça a chave da API Unsplash.");
       return;
     }
 
     try {
       setLoading(true);
-      await saveApiKeys(openAiKey, unsplashKey);
-      toast.success("Chaves API salvas com sucesso!");
+      await saveApiKeys(openAiKey, unsplashKey, grokKey, geminiKey, selectedProvider);
+      toast.success("Configurações salvas com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar chaves:", error);
       toast.error("Erro ao salvar configurações");
@@ -97,6 +124,27 @@ const Settings = () => {
         ) : (
           <div className="space-y-6">
             <div className="space-y-2">
+              <Label htmlFor="providerSelect">Provedor de IA</Label>
+              <Select 
+                value={selectedProvider} 
+                onValueChange={setSelectedProvider} 
+                disabled={loading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o provedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI (GPT)</SelectItem>
+                  <SelectItem value="grok">Grok AI</SelectItem>
+                  <SelectItem value="gemini">Google Gemini</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Selecione o provedor de IA para geração de conteúdo
+              </p>
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="openAiKey">OpenAI API Key</Label>
               <Input
                 id="openAiKey"
@@ -105,6 +153,7 @@ const Settings = () => {
                 onChange={(e) => setOpenAiKey(e.target.value)}
                 placeholder="sk-..."
                 disabled={loading}
+                className={selectedProvider !== "openai" ? "opacity-50" : ""}
               />
               <p className="text-xs text-muted-foreground">
                 Obtenha sua chave em{" "}
@@ -115,6 +164,54 @@ const Settings = () => {
                   className="text-brand-purple hover:underline"
                 >
                   platform.openai.com/api-keys
+                </a>
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="grokKey">Grok API Key</Label>
+              <Input
+                id="grokKey"
+                type="password"
+                value={grokKey}
+                onChange={(e) => setGrokKey(e.target.value)}
+                placeholder="grok-..."
+                disabled={loading}
+                className={selectedProvider !== "grok" ? "opacity-50" : ""}
+              />
+              <p className="text-xs text-muted-foreground">
+                Obtenha sua chave em{" "}
+                <a 
+                  href="https://api.grok.ai/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-brand-purple hover:underline"
+                >
+                  api.grok.ai
+                </a>
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="geminiKey">Google Gemini API Key</Label>
+              <Input
+                id="geminiKey"
+                type="password"
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+                placeholder="AIza..."
+                disabled={loading}
+                className={selectedProvider !== "gemini" ? "opacity-50" : ""}
+              />
+              <p className="text-xs text-muted-foreground">
+                Obtenha sua chave em{" "}
+                <a 
+                  href="https://ai.google.dev/tutorials/setup" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-brand-purple hover:underline"
+                >
+                  ai.google.dev/tutorials/setup
                 </a>
               </p>
             </div>

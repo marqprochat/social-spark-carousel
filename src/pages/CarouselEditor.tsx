@@ -14,7 +14,10 @@ const CarouselEditor = () => {
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
   const [openAiKey, setOpenAiKey] = useState<string>(""); 
   const [unsplashKey, setUnsplashKey] = useState<string>("");
-  const [carouselDescription, setCarouselDescription] = useState<string>(""); // Adicionar estado para a descrição
+  const [grokKey, setGrokKey] = useState<string>("");
+  const [geminiKey, setGeminiKey] = useState<string>("");
+  const [selectedProvider, setSelectedProvider] = useState<string>("openai");
+  const [carouselDescription, setCarouselDescription] = useState<string>("");
 
   useEffect(() => {
     const checkSession = async () => {
@@ -32,6 +35,9 @@ const CarouselEditor = () => {
         if (apiKeys) {
           setOpenAiKey(apiKeys.openAiKey || "");
           setUnsplashKey(apiKeys.unsplashKey || "");
+          setGrokKey(apiKeys.grokKey || "");
+          setGeminiKey(apiKeys.geminiKey || "");
+          setSelectedProvider(apiKeys.selectedProvider || "openai");
         }
         
         fetchCarouselData();
@@ -136,8 +142,11 @@ const CarouselEditor = () => {
         businessInfo={businessInfo}
         openAiKey={openAiKey}
         unsplashKey={unsplashKey}
+        grokKey={grokKey}
+        geminiKey={geminiKey}
+        selectedProvider={selectedProvider}
         onBack={handleBack}
-        carouselDescription={carouselDescription} // Passa a descrição para o componente CarouselCreator
+        carouselDescription={carouselDescription}
       />
     </div>
   );
