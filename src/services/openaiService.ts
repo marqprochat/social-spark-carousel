@@ -5,7 +5,6 @@ import { BusinessInfo } from "@/components/BusinessInfoForm";
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 const GROK_API_URL = "https://api.grok.x/v1/chat/completions";
-const DEFAULT_API_KEY = "";  // Removido a chave default para forçar o uso da chave do usuário
 
 interface GenerateTextProps {
   businessInfo: BusinessInfo;
@@ -142,7 +141,8 @@ async function generateWithOpenAI(prompt: string, apiKey: string): Promise<strin
   });
 
   if (!response.ok) {
-    handleApiError(response);
+    const errorData = await response.json().catch(() => null);
+    handleApiError(response, errorData);
   }
 
   const data = await response.json();
@@ -174,7 +174,8 @@ async function generateWithGrok(prompt: string, apiKey: string): Promise<string>
   });
 
   if (!response.ok) {
-    handleApiError(response);
+    const errorData = await response.json().catch(() => null);
+    handleApiError(response, errorData);
   }
 
   const data = await response.json();
@@ -205,34 +206,30 @@ async function generateWithGemini(prompt: string, apiKey: string): Promise<strin
   });
 
   if (!response.ok) {
-    handleApiError(response);
+    const errorData = await response.json().catch(() => null);
+    handleApiError(response, errorData);
   }
 
   const data = await response.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-async function handleApiError(response: Response): Promise<never> {
+function handleApiError(response: Response, errorData: any = null): never {
   let errorMessage = `Erro HTTP: ${response.status}`;
 
-  try {
-    const errorData = await response.json();
+  if (errorData && errorData.error) {
     console.error("Erro da API:", errorData);
     
-    if (errorData.error) {
-      // Mensagens de erro específicas para problemas comuns
-      if (errorData.error.code === "invalid_api_key") {
-        errorMessage = "Chave de API inválida. Verifique se você inseriu corretamente.";
-      } else if (errorData.error.code === "insufficient_quota") {
-        errorMessage = "Sua conta não tem créditos suficientes. Verifique seu saldo.";
-      } else if (errorData.error.type === "invalid_request_error") {
-        errorMessage = `Erro de solicitação: ${errorData.error.message}`;
-      } else {
-        errorMessage = errorData.error.message || errorMessage;
-      }
+    // Mensagens de erro específicas para problemas comuns
+    if (errorData.error.code === "invalid_api_key") {
+      errorMessage = "Chave de API inválida. Verifique se você inseriu corretamente.";
+    } else if (errorData.error.code === "insufficient_quota") {
+      errorMessage = "Sua conta não tem créditos suficientes. Verifique seu saldo.";
+    } else if (errorData.error.type === "invalid_request_error") {
+      errorMessage = `Erro de solicitação: ${errorData.error.message}`;
+    } else {
+      errorMessage = errorData.error.message || errorMessage;
     }
-  } catch (e) {
-    console.error("Erro ao processar resposta de erro:", e);
   }
 
   throw new Error(errorMessage);
