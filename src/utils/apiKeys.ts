@@ -65,7 +65,7 @@ export const getApiKeys = async (): Promise<ApiKeys | null> => {
       }
       
       if (data) {
-        // Handle case where columns might not exist yet in the database
+        // Map the database columns to our ApiKeys interface
         return {
           openAiKey: data.openai_key,
           unsplashKey: data.unsplash_key,
