@@ -100,23 +100,46 @@ export const saveApiKeys = async (
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-      // If authenticated, save to table
-      const { error } = await supabase
+      // First check if the user already has an entry
+      const { data } = await supabase
         .from('api_keys')
-        .upsert({
-          user_id: session.user.id,
-          openai_key: openAiKey,
-          unsplash_key: unsplashKey,
-          grok_key: grokKey,
-          gemini_key: geminiKey,
-          selected_provider: selectedProvider
-        }, {
-          onConflict: 'user_id'
-        });
-        
-      if (error) {
-        console.error("Error saving keys:", error);
-        throw error;
+        .select('*')
+        .eq('user_id', session.user.id);
+      
+      if (data && data.length > 0) {
+        // Update existing record
+        const { error } = await supabase
+          .from('api_keys')
+          .update({
+            openai_key: openAiKey,
+            unsplash_key: unsplashKey,
+            grok_key: grokKey,
+            gemini_key: geminiKey,
+            selected_provider: selectedProvider
+          })
+          .eq('user_id', session.user.id);
+          
+        if (error) {
+          console.error("Error updating keys:", error);
+          throw error;
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('api_keys')
+          .insert({
+            user_id: session.user.id,
+            openai_key: openAiKey,
+            unsplash_key: unsplashKey,
+            grok_key: grokKey,
+            gemini_key: geminiKey,
+            selected_provider: selectedProvider
+          });
+          
+        if (error) {
+          console.error("Error inserting keys:", error);
+          throw error;
+        }
       }
     }
     

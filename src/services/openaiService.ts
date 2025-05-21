@@ -141,7 +141,13 @@ async function generateWithOpenAI(prompt: string, apiKey: string): Promise<strin
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
+    const errorText = await response.text();
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = null;
+    }
     handleApiError(response, errorData);
   }
 
@@ -174,7 +180,13 @@ async function generateWithGrok(prompt: string, apiKey: string): Promise<string>
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
+    const errorText = await response.text();
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = null;
+    }
     handleApiError(response, errorData);
   }
 
@@ -206,7 +218,13 @@ async function generateWithGemini(prompt: string, apiKey: string): Promise<strin
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
+    const errorText = await response.text();
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = null;
+    }
     handleApiError(response, errorData);
   }
 
